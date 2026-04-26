@@ -1,0 +1,276 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+COMPOSE_FILE="docker-compose.yml"
+BACKUP_DIR="./backups"
+ENV_FILE=".env"
+INIT_DIR="./init"
+
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+NC='\033[0m'
+
+log()    { echo -e "${GREEN}[ctxpool]${NC} $1"; }
+warn()   { echo -e "${YELLOW}[ctxpool]${NC} $1"; }
+error()  { echo -e "${RED}[ctxpool]${NC} $1"; exit 1; }
+header() { echo -e "\n${BLUE}=== $1 ===${NC}"; }
+
+require() {
+  command -v "$1" &>/dev/null || error "'$1' is required but not installed."
+}
+
+_env_get() {
+  local key="$1"
+  grep -E "^${key}=" "$ENV_FILE" 2>/dev/null | cut -d'=' -f2- | tr -d '"' || true
+}
+
+_check_env() {
+  [ -f "$ENV_FILE" ] || error "$ENV_FILE not found. Copy .env.example to .env and fill in your values."
+
+  # At least one provider must be configured
+  local has_provider=false
+  for var in OPENAI_API_KEY ANTHROPIC_API_KEY OPENROUTER_API_KEY LMSTUDIO_BASE_URL OLLAMA_BASE_URL; do
+    local val
+    val=$(_env_get "$var")
+    [ -n "$val" ] && has_provider=true
+  done
+
+  "$has_provider" || error "No LLM provider configured in $ENV_FILE. Set at least one of: OPENAI_API_KEY, ANTHROPIC_API_KEY, OPENROUTER_API_KEY, LMSTUDIO_BASE_URL, OLLAMA_BASE_URL"
+}
+
+_log_llm_config() {
+  log "Configured providers:"
+  for var in OPENAI_API_KEY ANTHROPIC_API_KEY OPENROUTER_API_KEY LMSTUDIO_BASE_URL OLLAMA_BASE_URL; do
+    local val
+    val=$(_env_get "$var")
+    [ -n "$val" ] && log "  ✓ ${var}"
+  done
+}
+
+_wait_healthy() {
+  local container="$1"
+  local timeout="$2"
+  local elapsed=0
+
+  while [ $elapsed -lt $timeout ]; do
+    local status
+    status=$(docker inspect --format='{{.State.Health.Status}}' "$container" 2>/dev/null || echo "not found")
+    if [ "$status" = "healthy" ]; then
+      log "$container is healthy"
+      return 0
+    fi
+    sleep 2
+    elapsed=$((elapsed + 2))
+  done
+
+  warn "$container did not become healthy within ${timeout}s — check logs with: ./go logs $container"
+}
+
+_docker_compose() {
+  local profiles=($1)
+  shift
+  local args=()
+  for p in "${profiles[@]:-}"; do
+    args+=("--profile" "$p")
+  done
+  docker compose "${args[@]}" -f "$COMPOSE_FILE" "$@"
+}
+
+_parse_profiles() {
+  local profiles=()
+  for arg in "$@"; do
+    case "$arg" in
+      --search) profiles+=("search") ;;
+    esac
+  done
+  echo "${profiles[@]:-}"
+}
+
+cmd_init() {
+  local profiles
+  profiles=$(_parse_profiles "$@")
+
+  header "Initializing ContextPool"
+  require docker
+  _check_env
+  _log_llm_config
+
+  log "Pulling Docker images..."
+  _docker_compose "$profiles" pull
+
+  log "Starting services..."
+  _docker_compose "$profiles" up -d
+
+  log "Waiting for services to be healthy..."
+  _wait_healthy "ctxpool-letta-db" 30
+  _wait_healthy "ctxpool-mem0-db" 30
+
+  log "Done. Letta ADE available at http://localhost:8283"
+}
+
+cmd_up() {
+  local profiles
+  profiles=$(_parse_profiles "$@")
+
+  header "Starting ContextPool"
+  _check_env
+  _log_llm_config
+  _docker_compose "$profiles" up -d
+  log "Services started. Letta ADE at http://localhost:8283"
+}
+
+cmd_down() {
+  header "Stopping ContextPool"
+  docker compose -f "$COMPOSE_FILE" down
+  log "Services stopped."
+}
+
+cmd_restart() {
+  header "Restarting ContextPool"
+  docker compose -f "$COMPOSE_FILE" restart
+  log "Services restarted."
+}
+
+cmd_reset() {
+  header "Resetting ContextPool"
+  warn "This will DELETE all volumes and data. Are you sure? (y/N)"
+  read -r confirm
+  [[ "$confirm" =~ ^[Yy]$ ]] || { log "Aborted."; exit 0; }
+
+  docker compose -f "$COMPOSE_FILE" down -v
+  log "Volumes deleted. Restarting fresh..."
+  docker compose -f "$COMPOSE_FILE" up -d
+  log "Reset complete."
+}
+
+cmd_logs() {
+  local service="${1:-}"
+  if [ -n "$service" ]; then
+    docker compose -f "$COMPOSE_FILE" logs -f "$service"
+  else
+    docker compose -f "$COMPOSE_FILE" logs -f
+  fi
+}
+
+cmd_status() {
+  header "ContextPool Status"
+  docker compose -f "$COMPOSE_FILE" ps
+}
+
+cmd_ps() {
+  docker compose -f "$COMPOSE_FILE" ps
+}
+
+cmd_backup() {
+  header "Backing up ContextPool databases"
+  local timestamp
+  timestamp=$(date +%Y%m%d_%H%M%S)
+  local backup_path="$BACKUP_DIR/$timestamp"
+  mkdir -p "$backup_path"
+
+  log "Backing up letta-db..."
+  docker exec ctxpool-letta-db \
+    pg_dump -U letta letta \
+    > "$backup_path/letta-db.sql"
+
+  log "Backing up mem0-db..."
+  docker exec ctxpool-mem0-db \
+    pg_dump -U mem0 mem0 \
+    > "$backup_path/mem0-db.sql"
+
+  log "Backup saved to $backup_path"
+}
+
+cmd_restore() {
+  header "Restoring ContextPool databases"
+  local backup_path="${1:-}"
+
+  if [ -z "$backup_path" ]; then
+    if [ -z "$(ls -A "$BACKUP_DIR" 2>/dev/null)" ]; then
+      error "No backups found in $BACKUP_DIR"
+    fi
+    echo "Available backups:"
+    ls -1 "$BACKUP_DIR"
+    echo ""
+    read -rp "Enter backup timestamp to restore: " backup_path
+    backup_path="$BACKUP_DIR/$backup_path"
+  fi
+
+  [ -d "$backup_path" ] || error "Backup not found: $backup_path"
+
+  warn "This will overwrite current data. Are you sure? (y/N)"
+  read -r confirm
+  [[ "$confirm" =~ ^[Yy]$ ]] || { log "Aborted."; exit 0; }
+
+  log "Restoring letta-db..."
+  docker exec -i ctxpool-letta-db \
+    psql -U letta letta \
+    < "$backup_path/letta-db.sql"
+
+  log "Restoring mem0-db..."
+  docker exec -i ctxpool-mem0-db \
+    psql -U mem0 mem0 \
+    < "$backup_path/mem0-db.sql"
+
+  log "Restore complete."
+}
+
+cmd_letta_shell() {
+  header "Letta DB Shell"
+  docker exec -it ctxpool-letta-db psql -U letta -d letta
+}
+
+cmd_mem0_shell() {
+  header "mem0 DB Shell"
+  docker exec -it ctxpool-mem0-db psql -U mem0 -d mem0
+}
+
+cmd_help() {
+  echo ""
+  echo "Usage: ./go <command>"
+  echo ""
+  echo "Before running: copy .env.example to .env and fill in your values."
+  echo ""
+  echo "Infrastructure:"
+  echo "  init       First-time setup — create dirs, pull images, start services"
+  echo "  up         Start all services"
+  echo "  down       Stop all services"
+  echo "  restart    Restart all services"
+  echo "  reset      Stop, delete all volumes, restart fresh (destructive)"
+  echo ""
+  echo "Development:"
+  echo "  logs [service]    Tail logs (all services, or a specific one)"
+  echo "  status            Show service status, health, and active LLM config"
+  echo "  ps                Show running containers"
+  echo ""
+  echo "Data:"
+  echo "  backup            Dump all DB states to ./backups/<timestamp>/"
+  echo "  restore [path]    Restore DBs from a backup"
+  echo ""
+  echo "Shells:"
+  echo "  letta-shell       Open psql into letta-db"
+  echo "  mem0-shell        Open psql into mem0-db"
+  echo ""
+}
+
+COMMAND="${1:-help}"
+shift || true
+
+case "$COMMAND" in
+  init)         cmd_init "$@" ;;
+  up)           cmd_up "$@" ;;
+  down)         cmd_down ;;
+  restart)      cmd_restart ;;
+  reset)        cmd_reset ;;
+  logs)         cmd_logs "${1:-}" ;;
+  status)       cmd_status ;;
+  ps)           cmd_ps ;;
+  backup)       cmd_backup ;;
+  restore)      cmd_restore "${1:-}" ;;
+  letta-shell)  cmd_letta_shell ;;
+  mem0-shell)   cmd_mem0_shell ;;
+  help|--help)  cmd_help ;;
+  *)            error "Unknown command: $COMMAND. Run './go help' for usage." ;;
+esac

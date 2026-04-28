@@ -1,0 +1,8 @@
+{
+  "name": "investigator",
+  "model": "openrouter/anthropic/claude-sonnet-4.6",
+  "embedding": "openai/text-embedding-3-small",
+  "agent_type": "memgpt_agent",
+  "include_base_tools": true,
+  "include_multi_agent_tools": false
+}

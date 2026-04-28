@@ -83,9 +83,17 @@ _parse_profiles() {
   for arg in "$@"; do
     case "$arg" in
       --search) profiles+=("search") ;;
+      --all)    profiles+=("search") ;;  # add all known profiles here
     esac
   done
-  echo "${profiles[@]:-}"
+
+  # deduplicate
+  local unique=()
+  for p in "${profiles[@]:-}"; do
+    [[ " ${unique[*]:-} " == *" $p "* ]] || unique+=("$p")
+  done
+
+  echo "${unique[*]:-}"
 }
 
 cmd_init() {
@@ -227,6 +235,23 @@ cmd_mem0_shell() {
   docker exec -it ctxpool-mem0-db psql -U mem0 -d mem0
 }
 
+cmd_agents_register() {
+  header "Registering Agents"
+  [ -f "agents/setup.py" ] || error "agents/setup.py not found"
+  python3 agents/setup.py
+}
+
+cmd_tools_register() {
+  header "Registering Tools"
+  [ -f "tools/setup.py" ] || error "tools/setup.py not found"
+  python3 tools/setup.py
+}
+
+cmd_register_all() {
+  cmd_tools_register
+  cmd_agents_register
+}
+
 cmd_help() {
   echo ""
   echo "Usage: ./go <command>"
@@ -253,6 +278,11 @@ cmd_help() {
   echo "  letta-shell       Open psql into letta-db"
   echo "  mem0-shell        Open psql into mem0-db"
   echo ""
+  echo "Registeration:"
+  echo "  agents-reg        Register ctxcontext agents"
+  echo "  tools-reg         Register ctxcontext tools"
+  echo "  all-reg           Register ctxcontext agents and tools"
+  echo ""
 }
 
 COMMAND="${1:-help}"
@@ -271,6 +301,9 @@ case "$COMMAND" in
   restore)      cmd_restore "${1:-}" ;;
   letta-shell)  cmd_letta_shell ;;
   mem0-shell)   cmd_mem0_shell ;;
+  agents-reg)   cmd_agents_register ;;
+  tools-reg)    cmd_tools_register ;;
+  all-reg)      cmd_register_all ;;
   help|--help)  cmd_help ;;
   *)            error "Unknown command: $COMMAND. Run './go help' for usage." ;;
 esac

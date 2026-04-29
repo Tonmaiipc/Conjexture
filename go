@@ -137,14 +137,21 @@ cmd_up() {
 }
 
 cmd_down() {
+  local profiles
+  profiles=$(_parse_profiles "$@")
+  echo "profiles: '$profiles'"
+
   header "Stopping ContextPool"
-  docker compose -f "$COMPOSE_FILE" down
+  _docker_compose "$profiles" down
   log "Services stopped."
 }
 
 cmd_restart() {
+  local profiles
+  profiles=$(_parse_profiles "$@")
+
   header "Restarting ContextPool"
-  docker compose -f "$COMPOSE_FILE" restart
+  _docker_compose "$profiles" restart
   log "Services restarted."
 }
 
@@ -300,8 +307,8 @@ case "$COMMAND" in
   build) cmd_build ;;
   init)         cmd_init "$@" ;;
   up)           cmd_up "$@" ;;
-  down)         cmd_down ;;
-  restart)      cmd_restart ;;
+  down)         cmd_down "$@" ;;
+  restart)      cmd_restart "$@" ;;
   reset)        cmd_reset ;;
   logs)         cmd_logs "${1:-}" ;;
   status)       cmd_status ;;

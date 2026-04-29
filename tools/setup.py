@@ -4,7 +4,7 @@ import inspect
 import requests
 from pathlib import Path
 from dotenv import load_dotenv
-import memory
+import mem0_tools
 
 ROOT = Path(__file__).parent.parent
 load_dotenv(ROOT / ".env")
@@ -38,13 +38,13 @@ def upsert_tool(source_code: str, description: str, tags: list, pip_requirements
 def main():
     tools = [
         {
-            "func": memory.mem0_search_memory,
+            "func": mem0_tools.mem0_search_memory,
             "description": "Search org knowledge memory for information relevant to a query.",
             "tags": ["custom", "mem0"],
             "pip_requirements": [{"name": "mem0ai"}],
         },
         {
-            "func": memory.mem0_write_memory,
+            "func": mem0_tools.mem0_write_memory,
             "description": "Store a finding or piece of knowledge in org memory.",
             "tags": ["custom", "mem0"],
             "pip_requirements": [{"name": "mem0ai"}],

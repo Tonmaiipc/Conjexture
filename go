@@ -96,6 +96,13 @@ _parse_profiles() {
   echo "${unique[*]:-}"
 }
 
+cmd_build() {
+  header "Building ContextPool images"
+  require docker
+  docker build -f Dockerfile.letta -t ctxpool-letta:latest .
+  log "Done. Run './go init' or './go up' to start."
+}
+
 cmd_init() {
   local profiles
   profiles=$(_parse_profiles "$@")
@@ -106,7 +113,7 @@ cmd_init() {
   _log_llm_config
 
   log "Pulling Docker images..."
-  _docker_compose "$profiles" pull
+  _docker_compose "$profiles" pull --ignore-buildable
 
   log "Starting services..."
   _docker_compose "$profiles" up -d
@@ -259,6 +266,7 @@ cmd_help() {
   echo "Before running: copy .env.example to .env and fill in your values."
   echo ""
   echo "Infrastructure:"
+  echo "  build      Build custom Docker images (run before first init)"
   echo "  init       First-time setup — create dirs, pull images, start services"
   echo "  up         Start all services"
   echo "  down       Stop all services"
@@ -289,6 +297,7 @@ COMMAND="${1:-help}"
 shift || true
 
 case "$COMMAND" in
+  build) cmd_build ;;
   init)         cmd_init "$@" ;;
   up)           cmd_up "$@" ;;
   down)         cmd_down ;;

@@ -39,12 +39,20 @@ def create_agent(payload):
         sys.exit(1)
     return r.json()
 
+def get_tool_map() -> dict:
+    r = requests.get(f"{LETTA_URL}/v1/tools", headers=get_headers())
+    r.raise_for_status()
+    return {t["name"]: t["id"] for t in r.json()}
+
 def main():
     # Delete all existing agents
     print("Deleting existing agents...")
     for agent in get_all_agents():
         print(f"  Deleting {agent['name']} ({agent['id']})")
         delete_agent(agent["id"])
+
+    # Fetch tool map once
+    tool_map = get_tool_map()
 
     # Create agents from JSON files
     print("Creating agents...")
@@ -60,6 +68,15 @@ def main():
     for agent_file in agent_files:
         payload = json.loads(agent_file.read_text())
         name = payload.get("name", agent_file.stem)
+
+        tools = payload.pop("tools", [])
+        if tools:
+            missing = [n for n in tools if n not in tool_map]
+            if missing:
+                print(f"  ERROR: Tools not registered: {missing}. Run ./go tools-register first.")
+                sys.exit(1)
+            payload["tool_ids"] = [tool_map[n] for n in tools]
+
         print(f"  Creating {name}...")
         result = create_agent(payload)
         print(f"  Created {name} ({result['id']})")

@@ -4,7 +4,10 @@
 services:
 
   letta:
-    image: letta/letta:latest
+    build:
+      context: .
+      dockerfile: Dockerfile.letta
+    image: ctxpool-letta:latest
     container_name: ctxpool-letta
     ports:
       - "8283:8283"
@@ -19,8 +22,21 @@ services:
       - OLLAMA_BASE_URL=${OLLAMA_BASE_URL:-}
       - SECURE=${SECURE:-false}
       - LETTA_SERVER_PASSWORD=${LETTA_SERVER_PASSWORD:-}
+      # mounted tools' dir
+      - TOOL_EXEC_DIR=/app/tools
+      # env var for mem0
+      - MEM0_LLM_MODEL=${MEM0_LLM_MODEL}
+      - MEM0_LLM_BASE_URL=${MEM0_LLM_BASE_URL}
+      - MEM0_EMBEDDING_MODEL=${MEM0_EMBEDDING_MODEL}
+      - MEM0_EMBEDDING_BASE_URL=${MEM0_EMBEDDING_BASE_URL}
+      - MEM0_ORG_ID=${MEM0_ORG_ID}
+      - MEM0_LLM_API_KEY=${MEM0_LLM_API_KEY}
+      - QDRANT_HOST=${QDRANT_HOST}
+      - QDRANT_PORT=${QDRANT_PORT}
+      - QDRANT_COLLECTION=${QDRANT_COLLECTION}
     volumes:
       - letta-data:/root/.letta
+      - ./tools:/app/tools
     depends_on:
       letta-db:
         condition: service_healthy
@@ -71,6 +87,7 @@ services:
       timeout: 5s
       retries: 10
     restart: unless-stopped
+
   searxng:
     image: searxng/searxng
     container_name: contextos-searxng

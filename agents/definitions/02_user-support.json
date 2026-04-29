@@ -5,5 +5,7 @@
   "agent_type": "memgpt_agent",
   "include_base_tools": true,
   "include_multi_agent_tools": true,
-  "tools": []
+  "tools": [
+    "fetch_webpage"
+  ]
 }

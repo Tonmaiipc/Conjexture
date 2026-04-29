@@ -7,6 +7,7 @@
   "include_multi_agent_tools": true,
   "tools": [
     "mem0_search_memory",
-    "mem0_write_memory"
+    "mem0_write_memory",
+    "fetch_webpage"
   ]
 }

@@ -6,6 +6,7 @@
   "include_base_tools": true,
   "include_multi_agent_tools": true,
   "tools": [
-    "fetch_webpage"
+    "fetch_webpage",
+    "searxng_search"
   ]
 }

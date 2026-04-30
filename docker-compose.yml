@@ -31,9 +31,11 @@ services:
       - MEM0_EMBEDDING_BASE_URL=${MEM0_EMBEDDING_BASE_URL}
       - MEM0_ORG_ID=${MEM0_ORG_ID}
       - MEM0_LLM_API_KEY=${MEM0_LLM_API_KEY}
+      # other tools config
       - QDRANT_HOST=${QDRANT_HOST}
       - QDRANT_PORT=${QDRANT_PORT}
       - QDRANT_COLLECTION=${QDRANT_COLLECTION}
+      - SEARXNG_URL=${SEARXNG_URL:-http://searxng:8080}
     volumes:
       - letta-data:/root/.letta
       - ./tools:/app/tools
@@ -90,7 +92,7 @@ services:
 
   searxng:
     image: searxng/searxng
-    container_name: contextos-searxng
+    container_name: ctxpool-searxng
     profiles:
       - search
     ports:

@@ -5,6 +5,7 @@ import requests
 from pathlib import Path
 from dotenv import load_dotenv
 import mem0_tools
+from searxng_tools import searxng_search
 
 ROOT = Path(__file__).parent.parent
 load_dotenv(ROOT / ".env")
@@ -49,6 +50,12 @@ def main():
             "tags": ["custom", "mem0"],
             "pip_requirements": [{"name": "mem0ai"}],
         },
+        {
+            "func": searxng_search,
+            "description": "Search the web for information relevant to a query.",
+            "tags": ["custom", "search"],
+            "pip_requirements": [{"name": "requests"}],
+        }
     ]
 
     print("Registering tools...")

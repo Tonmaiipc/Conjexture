@@ -8,6 +8,7 @@
   "tools": [
     "mem0_search_memory",
     "mem0_write_memory",
-    "fetch_webpage"
+    "fetch_webpage",
+    "searxng_search"
   ]
 }

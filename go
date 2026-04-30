@@ -156,14 +156,17 @@ cmd_restart() {
 }
 
 cmd_reset() {
+  local profiles
+  profiles=$(_parse_profiles "$@")
+  
   header "Resetting ContextPool"
   warn "This will DELETE all volumes and data. Are you sure? (y/N)"
   read -r confirm
   [[ "$confirm" =~ ^[Yy]$ ]] || { log "Aborted."; exit 0; }
 
-  docker compose -f "$COMPOSE_FILE" down -v
+  _docker_compose "$profiles" down -v
   log "Volumes deleted. Restarting fresh..."
-  docker compose -f "$COMPOSE_FILE" up -d
+  _docker_compose "$profiles" up -d
   log "Reset complete."
 }
 

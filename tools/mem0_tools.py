@@ -39,7 +39,6 @@ def mem0_search_memory(query: str) -> str:
             }
         }
     }
-
     org_id = os.environ["MEM0_ORG_ID"]
     m = Memory.from_config(config)
     results = m.search(query, filters={"user_id": org_id})
@@ -72,6 +71,18 @@ def mem0_write_memory(content: str, source_timestamp: Optional[str] = None) -> s
     import os
     from mem0 import Memory
 
+    custom_fact_extraction_prompt = """
+Extract factual knowledge relevant to org operations. Focus on:
+- Technical findings (system behavior, bugs, configurations)
+- Process outcomes (what happened, when, result)
+- Tool and service status
+- Decisions made and their rationale
+
+Ignore conversational filler, greetings, and meta-commentary about the investigation process itself.
+
+Return a JSON object with a facts array.
+"""
+
     config = {
         "llm": {
             "provider": "openai",
@@ -96,7 +107,8 @@ def mem0_write_memory(content: str, source_timestamp: Optional[str] = None) -> s
                 "port": int(os.environ["QDRANT_PORT"]),
                 "collection_name": os.environ["QDRANT_COLLECTION"],
             }
-        }
+        },
+        "custom_fact_extraction_prompt": custom_fact_extraction_prompt
     }
 
     org_id = os.environ["MEM0_ORG_ID"]

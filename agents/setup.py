@@ -1,4 +1,5 @@
 from dotenv import load_dotenv
+import argparse
 import os
 import sys
 import json
@@ -22,21 +23,21 @@ def get_headers():
         headers["Authorization"] = f"Bearer {LETTA_PASSWORD}"
     return headers
 
-def get_letta_agents():
+def request_existing_agents() -> dict:
     r = requests.get(f"{LETTA_URL}/v1/agents", headers=get_headers())
     r.raise_for_status()
-    return r.json()
+    return {a["name"]: a["id"] for a in r.json()}
 
 def delete_agent(agent_id):
     r = requests.delete(f"{LETTA_URL}/v1/agents/{agent_id}", headers=get_headers())
     r.raise_for_status()
 
-def delete_existing_agents():
+def delete_existing_agents(existing_agents: dict | None = None):
     # Delete all existing agents
     print("Deleting existing agents...")
-    for agent in get_letta_agents():
-        print(f"  Deleting {agent['name']} ({agent['id']})")
-        delete_agent(agent["id"])
+    for agent_name, agent_id in (existing_agents or request_existing_agents()).items():
+        print(f"  Deleting {agent_name} ({agent_id})")
+        delete_agent(agent_id)
 
 def request_tool_map_from_letta_host() -> dict:
     r = requests.get(f"{LETTA_URL}/v1/tools", headers=get_headers())
@@ -63,9 +64,8 @@ def read_agent_prompt_map() -> dict:
         sys.exit(1)
     return prompt_map
 
-def build_agent_payloads() -> list[AgentPayload]:
+def build_agent_payloads(tool_map: dict) -> list[AgentPayload]:
     definitions = read_agent_definitions()
-    tool_map = request_tool_map_from_letta_host()
     prompt_map = read_agent_prompt_map()
     return [to_payload(d, tool_map, prompt_map) for d in definitions]
 
@@ -80,21 +80,64 @@ def post_agent(payload: AgentPayload) -> dict:
         sys.exit(1)
     return r.json()
 
-def register_agents() -> dict:
+def register_new_agents(tool_map: dict) -> dict:
     # Create agents from JSON files
     print("Registering agents...")
     registered_agents = {}
-    for agent_definition in build_agent_payloads():
+    for agent_definition in build_agent_payloads(tool_map):
         print(f"  Registering {agent_definition.name}...")
         result = post_agent(agent_definition)
         print(f"  Registered {agent_definition.name} ({result['id']})")
         registered_agents[agent_definition.name] = result['id']
     return registered_agents
 
-def main():
-    delete_existing_agents()   
-    register_agents()
+def update_existing_agents(existing_agents: dict, new_agent_payloads: list[AgentPayload]) -> dict:
+    # Update existing agents with new definitions
+    print("Updating existing agents...")
+    updated_agents = {}
+    for payload in new_agent_payloads:
+        agent_id = existing_agents.get(payload.name)
+        if not agent_id:
+            print(f"  No existing agent found for {payload.name}, creating a new agent.")
+            result = post_agent(payload)
+            print(f"  Created {payload.name} ({result['id']})")
+            updated_agents[payload.name] = result['id']
+            continue
+        print(f"  Updating {payload.name} ({agent_id})...")
+        result = requests.patch(
+            f"{LETTA_URL}/v1/agents/{agent_id}",
+            headers=get_headers(),
+            json=payload.model_dump( exclude_none=True, by_alias=True )
+        )
+        if not result.ok:
+            print(f"  ERROR updating {payload.name}: {result.json().get('detail', result.text)}")
+            sys.exit(1)
+        print(f"  Updated {payload.name} ({agent_id})")
+        updated_agents[payload.name] = agent_id
+    return updated_agents
+
+def main(tool_map: dict | None = None) -> dict:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--reset", action="store_true", help="Delete all agents and recreate from scratch")
+    args = parser.parse_args()
+
+    tool_map = tool_map or request_tool_map_from_letta_host()
+    existing_agents = request_existing_agents()
+
+    if args.reset:
+        delete_existing_agents(existing_agents)
+        impacted_agents = register_new_agents(tool_map)
+    elif existing_agents:
+        print("Existing agents found:")
+        print("\n".join(f"  {name} ({agent_id})" for name, agent_id in existing_agents.items()))
+        update_agent_payloads = build_agent_payloads(tool_map)
+        impacted_agents = update_existing_agents(existing_agents, update_agent_payloads)
+    else:        
+        print("No existing agents found. Registering new agents...")
+        impacted_agents = register_new_agents(tool_map)
     print("Done.")
+
+    return impacted_agents
 
 if __name__ == "__main__":
     main()

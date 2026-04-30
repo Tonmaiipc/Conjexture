@@ -59,14 +59,16 @@ def main():
     ]
 
     print("Registering tools...")
+    registered_tools = {}
     for tool in tools:
         source_code = inspect.getsource(tool["func"])
         name = tool["func"].__name__
         print(f"  Upserting {name}...")
         result = upsert_tool(source_code, tool["description"], tool["tags"], tool["pip_requirements"])
         print(f"  Done: {result['id']}")
-
+        registered_tools[name] = result["id"]
     print("Done.")
+    return registered_tools
 
 if __name__ == "__main__":
     main()

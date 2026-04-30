@@ -80,13 +80,16 @@ def post_agent(payload: AgentPayload) -> dict:
         sys.exit(1)
     return r.json()
 
-def register_agents():
+def register_agents() -> dict:
     # Create agents from JSON files
     print("Registering agents...")
+    registered_agents = {}
     for agent_definition in build_agent_payloads():
         print(f"  Registering {agent_definition.name}...")
         result = post_agent(agent_definition)
         print(f"  Registered {agent_definition.name} ({result['id']})")
+        registered_agents[agent_definition.name] = result['id']
+    return registered_agents
 
 def main():
     delete_existing_agents()   

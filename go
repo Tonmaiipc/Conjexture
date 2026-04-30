@@ -40,6 +40,7 @@ _check_env() {
   "$has_provider" || error "No LLM provider configured in $ENV_FILE. Set at least one of: OPENAI_API_KEY, ANTHROPIC_API_KEY, OPENROUTER_API_KEY, LMSTUDIO_BASE_URL, OLLAMA_BASE_URL"
 }
 
+# infra setup
 _log_llm_config() {
   log "Configured providers:"
   for var in OPENAI_API_KEY ANTHROPIC_API_KEY OPENROUTER_API_KEY LMSTUDIO_BASE_URL OLLAMA_BASE_URL; do
@@ -252,6 +253,7 @@ cmd_mem0_shell() {
   docker exec -it ctxpool-mem0-db psql -U mem0 -d mem0
 }
 
+# letta setup
 cmd_agents_register() {
   header "Registering Agents"
   [ -f "agents/setup.py" ] || error "agents/setup.py not found"
@@ -307,7 +309,7 @@ COMMAND="${1:-help}"
 shift || true
 
 case "$COMMAND" in
-  build) cmd_build ;;
+  build)        cmd_build ;;
   init)         cmd_init "$@" ;;
   up)           cmd_up "$@" ;;
   down)         cmd_down "$@" ;;

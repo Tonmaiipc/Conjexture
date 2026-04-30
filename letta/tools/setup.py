@@ -4,8 +4,8 @@ import inspect
 import requests
 from pathlib import Path
 from dotenv import load_dotenv
-import tools.mem0_tools as mem0_tools
-from tools.searxng_tools import searxng_search
+import letta.tools.mem0_tools as mem0_tools
+from letta.tools.searxng_tools import searxng_search
 
 ROOT = Path(__file__).parent.parent
 load_dotenv(ROOT / ".env")

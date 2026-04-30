@@ -1,6 +1,6 @@
 import argparse
-import tools.setup as tools_setup
-import agents.setup as agents_setup
+import letta.tools.setup as tools_setup
+import letta.agents.setup as agents_setup
 
 def main():
     parser = argparse.ArgumentParser()

@@ -1,11 +1,10 @@
 from dotenv import load_dotenv
-import argparse
 import os
 import sys
 import json
 import requests
 from pathlib import Path
-from agents.models import AgentDefinition, AgentPayload, to_payload
+from letta.agents.models import AgentDefinition, AgentPayload, to_payload
 
 
 ROOT = Path(__file__).parent.parent

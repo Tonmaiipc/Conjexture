@@ -5,7 +5,7 @@ import sys
 import json
 import requests
 from pathlib import Path
-from models import AgentDefinition, AgentPayload, to_payload
+from agents.models import AgentDefinition, AgentPayload, to_payload
 
 
 ROOT = Path(__file__).parent.parent
@@ -116,15 +116,11 @@ def update_existing_agents(existing_agents: dict, new_agent_payloads: list[Agent
         updated_agents[payload.name] = agent_id
     return updated_agents
 
-def main(tool_map: dict | None = None) -> dict:
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--reset", action="store_true", help="Delete all agents and recreate from scratch")
-    args = parser.parse_args()
-
-    tool_map = tool_map or request_tool_map_from_letta_host()
+def main(reset: bool = False) -> dict:
+    tool_map = request_tool_map_from_letta_host()
     existing_agents = request_existing_agents()
 
-    if args.reset:
+    if reset:
         delete_existing_agents(existing_agents)
         impacted_agents = register_new_agents(tool_map)
     elif existing_agents:
@@ -138,6 +134,3 @@ def main(tool_map: dict | None = None) -> dict:
     print("Done.")
 
     return impacted_agents
-
-if __name__ == "__main__":
-    main()

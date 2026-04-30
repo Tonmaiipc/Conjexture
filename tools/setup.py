@@ -4,8 +4,8 @@ import inspect
 import requests
 from pathlib import Path
 from dotenv import load_dotenv
-import mem0_tools
-from searxng_tools import searxng_search
+import tools.mem0_tools as mem0_tools
+from tools.searxng_tools import searxng_search
 
 ROOT = Path(__file__).parent.parent
 load_dotenv(ROOT / ".env")
@@ -68,7 +68,3 @@ def main():
         print(f"  Done: {result['id']}")
         registered_tools[name] = result["id"]
     print("Done.")
-    return registered_tools
-
-if __name__ == "__main__":
-    main()

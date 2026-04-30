@@ -254,21 +254,24 @@ cmd_mem0_shell() {
 }
 
 # letta setup
-cmd_agents_register() {
+cmd_letta_agents_register() {
   header "Registering Agents"
   [ -f "agents/setup.py" ] || error "agents/setup.py not found"
-  python3 agents/setup.py
+  python3 setup.py --agents
 }
 
-cmd_tools_register() {
+cmd_letta_tools_register() {
   header "Registering Tools"
   [ -f "tools/setup.py" ] || error "tools/setup.py not found"
-  python3 tools/setup.py
+  python3 setup.py --tools
 }
 
-cmd_register_all() {
-  cmd_tools_register
-  cmd_agents_register
+cmd_letta_register_all() {
+  python3 setup.py --all
+}
+
+cmd_letta_reset_register() {
+  python3 setup.py --reset
 }
 
 cmd_help() {
@@ -278,30 +281,31 @@ cmd_help() {
   echo "Before running: copy .env.example to .env and fill in your values."
   echo ""
   echo "Infrastructure:"
-  echo "  build      Build custom Docker images (run before first init)"
-  echo "  init       First-time setup — create dirs, pull images, start services"
-  echo "  up         Start all services"
-  echo "  down       Stop all services"
-  echo "  restart    Restart all services"
-  echo "  reset      Stop, delete all volumes, restart fresh (destructive)"
+  echo "  build                   Build custom Docker images (run before first init)"
+  echo "  init                    First-time setup — create dirs, pull images, start services"
+  echo "  up                      Start all services"
+  echo "  down                    Stop all services"
+  echo "  restart                 Restart all services"
+  echo "  reset                   Stop, delete all volumes, restart fresh (destructive)"
   echo ""
   echo "Development:"
-  echo "  logs [service]    Tail logs (all services, or a specific one)"
-  echo "  status            Show service status, health, and active LLM config"
-  echo "  ps                Show running containers"
+  echo "  logs [service]          Tail logs (all services, or a specific one)"
+  echo "  status                  Show service status, health, and active LLM config"
+  echo "  ps                      Show running containers"
   echo ""
   echo "Data:"
-  echo "  backup            Dump all DB states to ./backups/<timestamp>/"
-  echo "  restore [path]    Restore DBs from a backup"
+  echo "  backup                  Dump all DB states to ./backups/<timestamp>/"
+  echo "  restore [path]          Restore DBs from a backup"
   echo ""
   echo "Shells:"
-  echo "  letta-shell       Open psql into letta-db"
-  echo "  mem0-shell        Open psql into mem0-db"
+  echo "  letta-shell             Open psql into letta-db"
+  echo "  mem0-shell              Open psql into mem0-db"
   echo ""
   echo "Registeration:"
-  echo "  agents-reg        Register ctxcontext agents"
-  echo "  tools-reg         Register ctxcontext tools"
-  echo "  all-reg           Register ctxcontext agents and tools"
+  echo "  letta-agents-reg        Register ctxcontext agents"
+  echo "  letta-tools-reg         Register ctxcontext tools"
+  echo "  letta-all-reg           Register ctxcontext agents and tools"
+  echo "  letta-reset-reg         Remove and register ctxcontext agents and tools"
   echo ""
 }
 
@@ -309,22 +313,23 @@ COMMAND="${1:-help}"
 shift || true
 
 case "$COMMAND" in
-  build)        cmd_build ;;
-  init)         cmd_init "$@" ;;
-  up)           cmd_up "$@" ;;
-  down)         cmd_down "$@" ;;
-  restart)      cmd_restart "$@" ;;
-  reset)        cmd_reset ;;
-  logs)         cmd_logs "${1:-}" ;;
-  status)       cmd_status ;;
-  ps)           cmd_ps ;;
-  backup)       cmd_backup ;;
-  restore)      cmd_restore "${1:-}" ;;
-  letta-shell)  cmd_letta_shell ;;
-  mem0-shell)   cmd_mem0_shell ;;
-  agents-reg)   cmd_agents_register ;;
-  tools-reg)    cmd_tools_register ;;
-  all-reg)      cmd_register_all ;;
-  help|--help)  cmd_help ;;
-  *)            error "Unknown command: $COMMAND. Run './go help' for usage." ;;
+  build)              cmd_build ;;
+  init)               cmd_init "$@" ;;
+  up)                 cmd_up "$@" ;;
+  down)               cmd_down "$@" ;;
+  restart)            cmd_restart "$@" ;;
+  reset)              cmd_reset ;;
+  logs)               cmd_logs "${1:-}" ;;
+  status)             cmd_status ;;
+  ps)                 cmd_ps ;;
+  backup)             cmd_backup ;;
+  restore)            cmd_restore "${1:-}" ;;
+  letta-shell)        cmd_letta_shell ;;
+  mem0-shell)         cmd_mem0_shell ;;
+  letta-agents-reg)   cmd_letta_agents_register ;;
+  letta-tools-reg)    cmd_letta_tools_register ;;
+  letta-all-reg)      cmd_letta_register_all ;;
+  letta-reset-reg)    cmd_letta_reset_register ;;
+  help|--help)        cmd_help ;;
+  *)                  error "Unknown command: $COMMAND. Run './go help' for usage." ;;
 esac

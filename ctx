@@ -271,7 +271,7 @@ cmd_letta_register_all() {
 }
 
 cmd_letta_reset_register() {
-  python3 setup.py --reset
+  python3 setup.py --all --reset
 }
 
 cmd_help() {

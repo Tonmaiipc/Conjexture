@@ -1,10 +1,13 @@
+from typing import Literal
+
 from dotenv import load_dotenv
 import os
 import sys
 import json
+from pydantic import BaseModel
 import requests
 from pathlib import Path
-from letta.agents.models import AgentDefinition, AgentPayload, to_payload
+from _letta.agents.models import AgentDefinition, AgentPayload, AgentSetupResult, to_payload
 
 
 ROOT = Path(__file__).parent.parent
@@ -79,28 +82,49 @@ def post_agent(payload: AgentPayload) -> dict:
         sys.exit(1)
     return r.json()
 
-def register_new_agents(tool_map: dict) -> dict:
-    # Create agents from JSON files
-    print("Registering agents...")
-    registered_agents = {}
-    for agent_definition in build_agent_payloads(tool_map):
-        print(f"  Registering {agent_definition.name}...")
-        result = post_agent(agent_definition)
-        print(f"  Registered {agent_definition.name} ({result['id']})")
-        registered_agents[agent_definition.name] = result['id']
-    return registered_agents
+def inject_investigator_memory_block(payload: AgentPayload, investigator_id: str) -> AgentPayload:
+    block = {
+        "label": "user_support_agent_registry",
+        "value": json.dumps({"investigator_id": investigator_id}),
+        "description": "Registry of agent IDs for inter-agent communication.",
+        "read_only": True
+    }
+    return payload.model_copy(update={"memory_blocks": [block]})
 
-def update_existing_agents(existing_agents: dict, new_agent_payloads: list[AgentPayload]) -> dict:
+def create_agent(payload: AgentPayload) -> dict:
+    print(f"  Registering {payload.name}...")
+    result = post_agent(payload)
+    print(f"  Registered {payload.name} ({result['id']})")
+    return result
+
+def register_new_agents(tool_map: dict) -> AgentSetupResult:
+    print("Registering agents...")
+    payloads = {p.name: p for p in build_agent_payloads(tool_map)}
+
+    investigator = create_agent(payloads["investigator"])
+    
+    user_support_payload = inject_investigator_memory_block(
+        payloads["user-support"], 
+        investigator["id"]
+    )
+    user_support = create_agent(user_support_payload)
+
+    return AgentSetupResult(created={
+        "investigator": investigator["id"],
+        "user-support": user_support["id"]
+    })
+
+def update_existing_agents(existing_agents: dict, new_agent_payloads: list[AgentPayload]) -> AgentSetupResult:
     # Update existing agents with new definitions
     print("Updating existing agents...")
-    updated_agents = {}
+    updated = {}
     for payload in new_agent_payloads:
         agent_id = existing_agents.get(payload.name)
         if not agent_id:
             print(f"  No existing agent found for {payload.name}, creating a new agent.")
             result = post_agent(payload)
             print(f"  Created {payload.name} ({result['id']})")
-            updated_agents[payload.name] = result['id']
+            updated[payload.name] = result['id']
             continue
         print(f"  Updating {payload.name} ({agent_id})...")
         result = requests.patch(
@@ -112,10 +136,10 @@ def update_existing_agents(existing_agents: dict, new_agent_payloads: list[Agent
             print(f"  ERROR updating {payload.name}: {result.json().get('detail', result.text)}")
             sys.exit(1)
         print(f"  Updated {payload.name} ({agent_id})")
-        updated_agents[payload.name] = agent_id
-    return updated_agents
+        updated[payload.name] = agent_id
+    return AgentSetupResult(updated=updated)
 
-def main(reset: bool = False) -> dict:
+def main(reset: bool = False) -> AgentSetupResult:
     tool_map = request_tool_map_from_letta_host()
     existing_agents = request_existing_agents()
 

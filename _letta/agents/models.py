@@ -24,6 +24,7 @@ class AgentPayload(BaseModel):
     description: str | None = None
     block_ids: list[str] = []
     tool_ids: list[str] = []
+    memory_blocks: list = []
     system: str
 
 def to_payload(definition: AgentDefinition, tool_map: dict, prompt_map: dict) -> AgentPayload:
@@ -47,5 +48,14 @@ def to_payload(definition: AgentDefinition, tool_map: dict, prompt_map: dict) ->
         description=definition.description,
         block_ids=definition.block_ids,
         tool_ids=[tool_map[t] for t in definition.tools],
+        memory_blocks=[],
         system=prompt,
     )
+
+class AgentSetupResult(BaseModel):
+    created: dict[str, str] = {}
+    updated: dict[str, str] = {}
+
+    @property
+    def all(self) -> dict[str, str]:
+        return {**self.created, **self.updated}

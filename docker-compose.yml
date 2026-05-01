@@ -23,6 +23,7 @@ services:
       - OLLAMA_BASE_URL=${OLLAMA_BASE_URL:-}
       - SECURE=${SECURE:-false}
       - LETTA_SERVER_PASSWORD=${LETTA_SERVER_PASSWORD:-}
+      - LETTA_BASE_URL=${LETTA_BASE_URL:-http://localhost:8283}
       # mounted tools' dir
       - TOOL_EXEC_DIR=/app/tools
       # env var for mem0

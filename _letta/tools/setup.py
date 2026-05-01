@@ -6,6 +6,7 @@ from pathlib import Path
 from dotenv import load_dotenv
 import _letta.tools.mem0_tools as mem0_tools
 from _letta.tools.searxng_tools import searxng_search
+from _letta.tools.async_dispatch_tools import dispatch_to_investigator, return_result_to_user_support
 
 ROOT = Path(__file__).parent.parent
 load_dotenv(ROOT / ".env")
@@ -49,6 +50,18 @@ def main():
             "description": "Store a finding or piece of knowledge in org memory.",
             "tags": ["custom", "mem0"],
             "pip_requirements": [{"name": "mem0ai"}],
+        },
+        {
+            "func": dispatch_to_investigator,
+            "description": "Dispatch an investigation request to the investigator agent asynchronously. Returns immediately with confirmation. The investigator will process the request and will respond via message later.",
+            "tags": ["custom", "mult-agent"],
+            "pip_requirements": [{"name": "requests"}],
+        },
+        {
+            "func": return_result_to_user_support,
+            "description": "Return the result of an investigation back to the user-support agent asynchronously.",
+            "tags": ["custom", "mult-agent"],
+            "pip_requirements": [{"name": "requests"}],
         },
         {
             "func": searxng_search,

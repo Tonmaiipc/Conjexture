@@ -1,6 +1,6 @@
 {
   "name": "investigator",
-  "model": "openrouter/deepseek/deepseek-v4-flash",
+  "model": "openrouter/deepseek/deepseek-chat",
   "model_endpoint_type": "openai",
   "embedding": "openai/text-embedding-3-small",
   "agent_type": "letta_v1_agent",
@@ -10,7 +10,11 @@
     "mem0_search_memory",
     "mem0_write_memory",
     "fetch_webpage",
-    "searxng_search"
+    "searxng_search",
+    "return_result_to_user_support"
   ],
-  "initial_message_sequence": []
+  "initial_message_sequence": [],
+  "model_settings" : {
+    "reasoning": {"reasoning_effort": "none"}
+  }
 }

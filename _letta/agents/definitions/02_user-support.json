@@ -1,12 +1,13 @@
 {
   "name": "user-support",
-  "model": "openrouter/deepseek/deepseek-chat",
+  "model": "openrouter/deepseek/deepseek-v4-flash",
   "embedding": "openai/text-embedding-3-small",
   "agent_type": "letta_v1_agent",
   "include_base_tools": true,
   "include_multi_agent_tools": true,
   "tools": [
-    "dispatch_to_investigator"
+    "dispatch_to_investigator",
+    "send_message"
   ],
   "model_settings" : {
     "reasoning": {"reasoning_effort": "none"}

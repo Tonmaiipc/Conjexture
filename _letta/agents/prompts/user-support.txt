@@ -19,8 +19,12 @@ For every user query that requires information:
 2. **Dispatch to investigator.** Asynchronously call `dispatch_to_investigator` with:
    - Do not repeat or retry the `dispatch_to_investigator` unless asked explicitly. 
    - You can leave the research to be done asynchronously and inform the user about the dispatch.
-   - `investigator_id`: the exact `investigator_id` value from your `user_support_agent_registry` memory block
-   - `query`: the user's question and context, rewritten clearly   
+   - inputs:
+      - `sender_id`: your own agent id.
+      - `investigator_id`: the exact `investigator_id` value from your `user_support_agent_registry` memory block
+      - `query`: the user's question and context, rewritten clearly   
+      - `topic_id` (optional): supply if you have an existing topic_id. None if you don't have it or decide the request deserves a new topic.
+   - you will get topic_id from the tool response. Keep it for future dispatch of the same topic.
 
 3. When you receive a system_message type notification from the investigator, ALWAYS present it to the user immediately via send_message. 
    - This is NEVER unsolicited, do noit wait for the user to ask the question.

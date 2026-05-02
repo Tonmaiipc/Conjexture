@@ -1,4 +1,6 @@
-def dispatch_to_investigator(query: str, sender_id: str, investigator_id: str) -> str:
+from typing import Optional
+
+def dispatch_to_investigator(query: str, sender_id: str, investigator_id: str, topic_id: Optional[str] = None) -> str:
     """
     Dispatch an investigation request to the investigator agent asynchronously. 
     Returns immediately with confirmation. The investigator will process the request and will respond via message later.
@@ -6,6 +8,7 @@ def dispatch_to_investigator(query: str, sender_id: str, investigator_id: str) -
         query (str): The user query.
         sender_id (str): The ID of the agent sending the request.
         investigator_id (str): The ID of the investigator agent to receive the request.
+        topic_id (Optional[str]): An optional existing topic ID to use for the investigation. Provide if exists, leave None to create a new one.
     Returns:
         A string containing the search results.
     """
@@ -14,10 +17,23 @@ def dispatch_to_investigator(query: str, sender_id: str, investigator_id: str) -
     import os
 
     letta_base_url = os.environ["LETTA_BASE_URL"]
-    
-    response = requests.post(
-        f"{letta_base_url}/v1/agents/{investigator_id}/messages/async",
-        headers={"Content-Type": "application/json"},
+
+    # Create or reuse conversation
+    if topic_id is None:
+        resp = requests.post(
+            f"{letta_base_url}/v1/conversations/",
+            params={"agent_id": investigator_id},
+            headers={"Content-Type": "application/json"},
+            json={"summary": query[:100]}
+        )
+        if resp.status_code != 200:
+            return f"Failed to create conversation: {resp.status_code} {resp.text}"
+        topic_id = resp.json()["id"]
+
+    # Send message to investigator conversation
+    resp = requests.post(
+        f"{letta_base_url}/v1/conversations/{topic_id}/messages",
+        headers={"Content-Type": "application/json", "Accept": "text/event-stream"},
         json={
             "messages": [
                 {
@@ -26,15 +42,17 @@ def dispatch_to_investigator(query: str, sender_id: str, investigator_id: str) -
                     "content": [{"type": "text", "text": f"from {sender_id}: {query}"}],
                     "sender_id": sender_id
                 }
-            ]
-        }
+            ],
+            "background": True,
+            "streaming": True
+        },
+        stream=True
     )
-    
-    if response.status_code != 200:
-        return f"Dispatch failed: {response.status_code} {response.text}"
-    
-    run = response.json()
-    return f"Investigation dispatched successfully. Run ID: {run['id']}"
+
+    if resp.status_code != 200:
+        return f"Dispatch failed: {resp.status_code} {resp.text}"
+
+    return f"Investigation dispatched. topic_id: {topic_id}"
 
 def return_result_to_user_support(result: str, investigator_id: str, user_support_id: str) -> str:
     """

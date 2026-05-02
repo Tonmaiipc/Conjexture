@@ -71,7 +71,7 @@ def return_result_to_user_support(result: str, investigator_id: str, user_suppor
     letta_base_url = os.environ["LETTA_BASE_URL"]
     
     response = requests.post(
-        f"{letta_base_url}/v1/agents/{user_support_id}/messages/async",
+        f"{letta_base_url}/v1/agents/{user_support_id}/messages",
         headers={"Content-Type": "application/json"},
         json={
             "messages": [
@@ -88,5 +88,4 @@ def return_result_to_user_support(result: str, investigator_id: str, user_suppor
     if response.status_code != 200:
         return f"Failed to return result: {response.status_code} {response.text}"
     
-    run = response.json()
-    return f"Result returned successfully. Run ID: {run['id']}"
+    return f"Result returned successfully."

@@ -28,7 +28,7 @@ A self-hosted org knowledge consolidation platform. Knowledge grows automaticall
 ```bash
 cp .env.example .env
 # Edit .env and configure at least one LLM provider
-./go init
+./ctx init
 ```
 
 Letta ADE will be available at http://localhost:8283.
@@ -56,26 +56,26 @@ All configured providers are available in the Letta ADE model dropdown. Model se
 ## Commands
 
 ```bash
-./go init        # First-time setup — pull images, start services
-./go up          # Start all services
-./go down        # Stop all services
-./go restart     # Restart all services
-./go reset       # Wipe all data and restart (destructive)
+./ctx init        # First-time setup — pull images, start services
+./ctx up          # Start all services
+./ctx down        # Stop all services
+./ctx restart     # Restart all services
+./ctx reset       # Wipe all data and restart (destructive)
 
-./go logs [svc]  # Tail logs
-./go status      # Service health + active provider config
-./go ps          # Running containers
+./ctx logs [svc]  # Tail logs
+./ctx status      # Service health + active provider config
+./ctx ps          # Running containers
 
-./go backup      # Dump databases to ./backups/<timestamp>/
-./go restore     # Restore databases from a backup
+./ctx backup      # Dump databases to ./backups/<timestamp>/
+./ctx restore     # Restore databases from a backup
 
-./go letta-shell # psql into letta-db
-./go mem0-shell  # psql into mem0-db
+./ctx letta-shell # psql into letta-db
+./ctx mem0-shell  # psql into mem0-db
 ```
 
 ## Agent setup
 
-After `./go init`, run the Python setup script to create the agents:
+After `./ctx init`, run the Python setup script to create the agents:
 
 ```bash
 cd agents

@@ -1,7 +1,7 @@
 {
   "name": "investigator",
-  "model": "openrouter/deepseek/deepseek-v4-flash",
-  "model_endpoint_type": "openai",
+  "model": "deepseek/deepseek-v4-flash",
+  "model_endpoint_type": "deepseek",
   "embedding": "openai/text-embedding-3-small",
   "agent_type": "letta_v1_agent",
   "include_base_tools": true,

@@ -1,6 +1,8 @@
 FROM letta/letta:latest
+COPY patches/fix_deepseek.py /tmp/fix_deepseek.py
 RUN /app/.venv/bin/python3 -m ensurepip && \
     /app/.venv/bin/python3 -m pip install mem0ai && \
     /app/.venv/bin/python3 -m pip install 'protobuf<6.0' && \
     /app/.venv/bin/python3 -m pip install fastembed && \
-    /app/.venv/bin/python3 -m pip install 'mem0ai[nlp]'
+    /app/.venv/bin/python3 -m pip install 'mem0ai[nlp]' && \
+    /app/.venv/bin/python3 /tmp/fix_deepseek.py

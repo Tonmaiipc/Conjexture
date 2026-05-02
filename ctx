@@ -66,7 +66,7 @@ _wait_healthy() {
     elapsed=$((elapsed + 2))
   done
 
-  warn "$container did not become healthy within ${timeout}s — check logs with: ./go logs $container"
+  warn "$container did not become healthy within ${timeout}s — check logs with: ./ctx logs $container"
 }
 
 _docker_compose() {
@@ -101,7 +101,7 @@ cmd_build() {
   header "Building ContextPool images"
   require docker
   docker build -f Dockerfile.letta -t ctxpool-letta:latest .
-  log "Done. Run './go init' or './go up' to start."
+  log "Done. Run ./ctx init' or './ctx up' to start."
 }
 
 cmd_init() {
@@ -276,7 +276,7 @@ cmd_letta_reset_register() {
 
 cmd_help() {
   echo ""
-  echo "Usage: ./go <command>"
+  echo "Usage: ./ctx <command>"
   echo ""
   echo "Before running: copy .env.example to .env and fill in your values."
   echo ""
@@ -331,5 +331,5 @@ case "$COMMAND" in
   letta-all-reg)      cmd_letta_register_all ;;
   letta-reset-reg)    cmd_letta_reset_register ;;
   help|--help)        cmd_help ;;
-  *)                  error "Unknown command: $COMMAND. Run './go help' for usage." ;;
+  *)                  error "Unknown command: $COMMAND. Run './ctx help' for usage." ;;
 esac

@@ -39,7 +39,7 @@ def dispatch_to_investigator(query: str, sender_id: str, investigator_id: str, t
                 {
                     "type": "message",
                     "role": "user",
-                    "content": [{"type": "text", "text": f"from {sender_id}: {query}"}],
+                    "content": [{"type": "text", "text": f"[SENDER_ID: {sender_id}]: {query}"}],
                     "sender_id": sender_id
                 }
             ],

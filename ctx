@@ -84,7 +84,8 @@ _parse_profiles() {
   for arg in "$@"; do
     case "$arg" in
       --search) profiles+=("search") ;;
-      --all)    profiles+=("search") ;;  # add all known profiles here
+      --slack)  profiles+=("slack") ;;
+      --all)    profiles+=("search" "slack") ;;  # add all known profiles here
     esac
   done
 

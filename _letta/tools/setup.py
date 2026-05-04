@@ -8,7 +8,7 @@ import _letta.tools.mem0_tools as mem0_tools
 from _letta.tools.searxng_tools import searxng_search
 from _letta.tools.async_dispatch_tools import dispatch_to_investigator, return_result_to_user_support
 
-ROOT = Path(__file__).parent.parent
+ROOT = Path(__file__).parent.parent.parent
 load_dotenv(ROOT / ".env")
 
 LETTA_URL = os.getenv("LETTA_URL", "http://localhost:8283")

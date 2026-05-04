@@ -26,7 +26,7 @@ For every user query that requires information:
       - `topic_id` (optional): supply if you have an existing topic_id. None if you don't have it or decide the request deserves a new topic.
    - you will get topic_id from the tool response. Keep it for future dispatch of the same topic.
 
-3. When you receive a system_message type notification from the investigator, ALWAYS present it to the user immediately via send_message. 
+3. When you receive a system message notification, ALWAYS check it, and ALWAYS present it to the user immediately via send_message. 
    - This is NEVER unsolicited, do noit wait for the user to ask the question.
    - Do not second-guess whether to present it. Just present it.
 

@@ -13,6 +13,7 @@ services:
       - "8283:8283"
     environment:
       - LETTA_PG_URI=${LETTA_DB_URI:-postgresql://letta:letta@letta-db:5432/letta}
+      - LETTA_ALLOW_PRIVATE_IP=${LETTA_ALLOW_PRIVATE_IP:-false}
       # Cloud
       - OPENAI_API_KEY=${OPENAI_API_KEY:-}
       - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
@@ -101,6 +102,22 @@ services:
       - "8080:8080"
     volumes:
       - ${SEARXNG_CONFIG_PATH:-./searxng-config}:/etc/searxng
+    restart: unless-stopped
+
+  slack-mcp:
+    image: ghcr.io/korotovsky/slack-mcp-server:latest
+    container_name: ctxpool-slack-mcp
+    profiles:
+      - slack
+    ports:
+      - "3001:3001"
+    environment:
+      - SLACK_MCP_XOXB_TOKEN=${SLACK_MCP_XOXB_TOKEN}
+      - SLACK_MCP_XOXP_TOKEN=${SLACK_MCP_XOXP_TOKEN}
+      - SLACK_MCP_HOST=0.0.0.0
+      - SLACK_MCP_PORT=3001
+      - SLACK_MCP_API_KEY=${SLACK_MCP_API_KEY}
+    command: ["-t", "http"]
     restart: unless-stopped
 
 volumes:

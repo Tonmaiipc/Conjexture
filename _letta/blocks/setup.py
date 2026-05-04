@@ -7,7 +7,7 @@ from dotenv import load_dotenv
 
 from _letta.agents.models import AgentSetupResult
 
-ROOT = Path(__file__).parent.parent
+ROOT = Path(__file__).parent.parent.parent
 load_dotenv(ROOT / ".env")
 
 LETTA_URL = os.getenv("LETTA_URL", "http://localhost:8283")

@@ -12,7 +12,12 @@
     "fetch_webpage",
     "searxng_search",
     "return_result_to_user_support",
-    "send_message"
+    "send_message",
+    "conversations_search_messages",
+    "conversations_history", 
+    "conversations_replies",
+    "channels_list",
+    "users_search"
   ],
   "initial_message_sequence": [],
   "model_settings" : {

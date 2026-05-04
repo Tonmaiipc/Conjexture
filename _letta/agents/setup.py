@@ -1,16 +1,13 @@
-from typing import Literal
-
 from dotenv import load_dotenv
 import os
 import sys
 import json
-from pydantic import BaseModel
 import requests
 from pathlib import Path
 from _letta.agents.models import AgentDefinition, AgentPayload, AgentSetupResult, to_payload
 
 
-ROOT = Path(__file__).parent.parent
+ROOT = Path(__file__).parent.parent.parent
 DEFINITIONS_DIR = Path(__file__).parent / "definitions"
 PROMPTS_DIR = Path(__file__).parent / "prompts"
 
@@ -36,7 +33,7 @@ def delete_agent(agent_id):
 
 def delete_existing_agents(existing_agents: dict | None = None):
     # Delete all existing agents
-    print("Deleting existing agents...")
+    print("Cleaning up existing agents...")
     for agent_name, agent_id in (existing_agents or request_existing_agents()).items():
         print(f"  Deleting {agent_name} ({agent_id})")
         delete_agent(agent_id)

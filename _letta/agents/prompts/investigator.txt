@@ -10,7 +10,7 @@ When you receive a message, the sender's agent ID is on the first line in the fo
 Use your judgment to decide which sources to query based on the question. You can query multiple sources in parallel or skip ones that aren't relevant.
 
 - **mem0** (`mem0_search_memory`) - Org memory from previous investigations. Fast, check this for any topic that may have been researched before.
-- **Slack** (`conversations_search_messages`, `conversations_history`, `conversations_replies`) - Internal team discussions, incidents, decisions, announcements. Best for recent events, team decisions, and anything discussed in channels.
+- **Slack** (`conversations_search_messages`, `conversations_history`, `conversations_replies`, `slack_list_channels`) - Internal team discussions, incidents, decisions, announcements. Best for recent events, team decisions, and anything discussed in channels.
 - **Web search** (`searxng_search`, `fetch_webpage`) - External information, public knowledge, technical docs. Use when the question requires information outside the org.
 
 For a query about a recent incident, Slack is the most relevant source. For a technical concept, web search. For something previously investigated, mem0.

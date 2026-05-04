@@ -17,7 +17,8 @@
     "conversations_history", 
     "conversations_replies",
     "channels_list",
-    "users_search"
+    "users_search",
+    "slack_list_channels"
   ],
   "initial_message_sequence": [],
   "model_settings" : {

@@ -28,17 +28,18 @@ services:
       # mounted tools' dir
       - TOOL_EXEC_DIR=/app/tools
       # env var for mem0
-      - MEM0_LLM_MODEL=${MEM0_LLM_MODEL}
-      - MEM0_LLM_BASE_URL=${MEM0_LLM_BASE_URL}
-      - MEM0_EMBEDDING_MODEL=${MEM0_EMBEDDING_MODEL}
-      - MEM0_EMBEDDING_BASE_URL=${MEM0_EMBEDDING_BASE_URL}
-      - MEM0_ORG_ID=${MEM0_ORG_ID}
-      - MEM0_LLM_API_KEY=${MEM0_LLM_API_KEY}
+      - MEM0_LLM_MODEL=${MEM0_LLM_MODEL:-}
+      - MEM0_LLM_BASE_URL=${MEM0_LLM_BASE_URL:-}
+      - MEM0_EMBEDDING_MODEL=${MEM0_EMBEDDING_MODEL:-}
+      - MEM0_EMBEDDING_BASE_URL=${MEM0_EMBEDDING_BASE_URL:-}
+      - MEM0_ORG_ID=${MEM0_ORG_ID:-}
+      - MEM0_LLM_API_KEY=${MEM0_LLM_API_KEY:-}
       # other tools config
       - QDRANT_HOST=${QDRANT_HOST}
       - QDRANT_PORT=${QDRANT_PORT}
       - QDRANT_COLLECTION=${QDRANT_COLLECTION}
       - SEARXNG_URL=${SEARXNG_URL:-http://searxng:8080}
+      - SLACK_MCP_XOXP_TOKEN=${SLACK_MCP_XOXP_TOKEN}
     volumes:
       - letta-data:/root/.letta
       - ./tools:/app/tools

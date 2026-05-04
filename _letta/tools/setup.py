@@ -7,6 +7,7 @@ from dotenv import load_dotenv
 import _letta.tools.mem0_tools as mem0_tools
 from _letta.tools.searxng_tools import searxng_search
 from _letta.tools.async_dispatch_tools import dispatch_to_investigator, return_result_to_user_support
+from _letta.tools.slack_tools import slack_list_channels
 
 ROOT = Path(__file__).parent.parent.parent
 load_dotenv(ROOT / ".env")
@@ -67,6 +68,12 @@ def main():
             "func": searxng_search,
             "description": "Search the web for information relevant to a query.",
             "tags": ["custom", "search"],
+            "pip_requirements": [{"name": "requests"}],
+        },
+        {
+            "func": slack_list_channels,
+            "description": "List all Slack channels the user has access to. Returns channel {<names>: <IDs>} for use with other Slack tools.",
+            "tags": ["custom", "slack"],
             "pip_requirements": [{"name": "requests"}],
         }
     ]

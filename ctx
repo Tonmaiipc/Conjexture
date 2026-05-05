@@ -1,5 +1,10 @@
 #!/usr/bin/env bash
 set -euo pipefail
+if [ -f ".env" ]; then
+  set -a
+  source ".env"
+  set +a
+fi
 
 COMPOSE_FILE="docker-compose.yml"
 BACKUP_DIR="./backups"
@@ -85,7 +90,8 @@ _parse_profiles() {
     case "$arg" in
       --search) profiles+=("search") ;;
       --slack)  profiles+=("slack") ;;
-      --all)    profiles+=("search" "slack") ;;  # add all known profiles here
+      --jira)   profiles+=("jira") ;;
+      --all)    profiles+=("search" "slack" "jira") ;;  # add all known profiles here
     esac
   done
 
@@ -275,6 +281,22 @@ cmd_letta_reset_register() {
   python3 setup.py --all --reset
 }
 
+cmd_jira_oauth() {
+  header "Jira OAuth Setup"
+  : "${ATLASSIAN_OAUTH_CLIENT_ID:?Please set ATLASSIAN_OAUTH_CLIENT_ID in .env}"
+  : "${ATLASSIAN_OAUTH_CLIENT_SECRET:?Please set ATLASSIAN_OAUTH_CLIENT_SECRET in .env}"
+
+  docker run --rm -it \
+    -p 8080:8080 \
+    -v "$(pwd)/.mcp-atlassian:/home/app/.mcp-atlassian" \
+    -e ATLASSIAN_OAUTH_CLIENT_ID="${ATLASSIAN_OAUTH_CLIENT_ID}" \
+    -e ATLASSIAN_OAUTH_CLIENT_SECRET="${ATLASSIAN_OAUTH_CLIENT_SECRET}" \
+    -e ATLASSIAN_OAUTH_REDIRECT_URI="${ATLASSIAN_OAUTH_REDIRECT_URI:-http://localhost:8080/callback}" \
+    ghcr.io/sooperset/mcp-atlassian:latest \
+    --oauth-setup -v
+  log "OAuth setup complete. Run './ctx up --jira' to start the Jira MCP server or ./ctx up --all to start all services."
+}
+
 cmd_help() {
   echo ""
   echo "Usage: ./ctx <command>"
@@ -308,6 +330,8 @@ cmd_help() {
   echo "  letta-all-reg           Register ctxcontext agents and tools"
   echo "  letta-reset-reg         Remove and register ctxcontext agents and tools"
   echo ""
+  echo "Integration:"
+  echo "  jira-oauth              Setup Jira OAuth"
 }
 
 COMMAND="${1:-help}"
@@ -331,6 +355,7 @@ case "$COMMAND" in
   letta-tools-reg)    cmd_letta_tools_register ;;
   letta-all-reg)      cmd_letta_register_all ;;
   letta-reset-reg)    cmd_letta_reset_register ;;
+  jira-oauth)         cmd_jira_oauth ;;
   help|--help)        cmd_help ;;
   *)                  error "Unknown command: $COMMAND. Run './ctx help' for usage." ;;
 esac

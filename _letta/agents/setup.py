@@ -39,7 +39,7 @@ def delete_existing_agents(existing_agents: dict | None = None):
         delete_agent(agent_id)
 
 def request_tool_map_from_letta_host() -> dict:
-    r = requests.get(f"{LETTA_URL}/v1/tools", headers=get_headers())
+    r = requests.get(f"{LETTA_URL}/v1/tools?limit=1000", headers=get_headers())
     r.raise_for_status()
     return {t["name"]: t["id"] for t in r.json()}
 

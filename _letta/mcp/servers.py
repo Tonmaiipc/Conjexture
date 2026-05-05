@@ -16,6 +16,12 @@ MCP_SERVERS = [
             "auth_header": "Authorization",
             "auth_token": "mocked-secret-token-for-dev"
         }
+    },
+    {
+        "server_name": "jira-mcp",
+        "config": {
+            "mcp_server_type": "streamable_http",
+            "server_url": "http://ctxpool-jira-mcp:3002/mcp"
+        }
     }
-    # future: jira-mcp, confluence-mcp, etc.
 ]

@@ -18,7 +18,20 @@
     "conversations_replies",
     "channels_list",
     "users_search",
-    "slack_list_channels"
+    "slack_list_channels",
+    "jira_search",
+    "jira_get_issue",
+    "jira_get_project_issues",
+    "jira_get_all_projects",
+    "jira_get_sprints_from_board",
+    "jira_get_sprint_issues",
+    "jira_batch_get_changelogs",
+    "jira_get_issue_dates",
+    "confluence_search",
+    "confluence_get_page",
+    "confluence_get_page_children",
+    "confluence_get_space_page_tree",
+    "confluence_get_comments"
   ],
   "initial_message_sequence": [],
   "model_settings" : {

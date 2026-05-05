@@ -121,6 +121,28 @@ services:
     command: ["-t", "http"]
     restart: unless-stopped
 
+  jira-mcp:
+    image: ghcr.io/sooperset/mcp-atlassian:latest
+    container_name: ctxpool-jira-mcp
+    profiles:
+      - jira
+    ports:
+      - "3002:3002"
+    environment:
+      - ATLASSIAN_OAUTH_ENABLE=true
+      - ATLASSIAN_OAUTH_CLIENT_ID=${ATLASSIAN_OAUTH_CLIENT_ID}
+      - ATLASSIAN_OAUTH_CLIENT_SECRET=${ATLASSIAN_OAUTH_CLIENT_SECRET}
+      - ATLASSIAN_OAUTH_REDIRECT_URI=http://localhost:8080/callback
+      - ATLASSIAN_OAUTH_CLOUD_ID=e7d89018-3348-48b7-82eb-0c81515b23e3
+      - ATLASSIAN_OAUTH_SCOPE=read:issue:jira read:project:jira read:user:jira read:sprint:jira-software read:epic:jira-software read:content:confluence read:space:confluence offline_access
+      - JIRA_URL=https://pavarit-ch.atlassian.net
+      - CONFLUENCE_URL=https://pavarit-ch.atlassian.net/wiki
+    volumes:
+      - ./.mcp-atlassian:/home/app/.mcp-atlassian
+    command: ["--transport", "streamable-http", "--port", "3002"]
+    restart: unless-stopped
+
+
 volumes:
   letta-data:
   letta-db-data:

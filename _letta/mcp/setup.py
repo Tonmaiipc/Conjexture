@@ -1,25 +1,34 @@
 import os
 from anyio import Path
 from dotenv import load_dotenv
-from letta_client import Letta
+import requests
 from _letta.mcp.servers import MCP_SERVERS
 
 ROOT = Path(__file__).parent.parent.parent
 load_dotenv(ROOT / ".env")
 
 LETTA_BASE_URL = os.getenv("LETTA_URL", "http://localhost:8283")
+LETTA_PASSWORD = os.getenv("LETTA_PASSWORD", "password")
+
+def get_headers():
+    headers = {"Content-Type": "application/json"}
+    if LETTA_PASSWORD:
+        headers["Authorization"] = f"Bearer {LETTA_PASSWORD}"
+    return headers
 
 def main():
-    # Register Slack MCP server
-    client = Letta(base_url=LETTA_BASE_URL)
-
+    headers = get_headers()
+    # Delete existing MCP server registrations
     print("Cleaning up existing MCP server registrations...")
-    for old_server in client.mcp_servers.list():
-        client.mcp_servers.delete(old_server.id)
-        print(f"  Deleted: {old_server.server_name} ({old_server.id})")
+    servers = requests.get(f"{LETTA_BASE_URL}/v1/mcp-servers/", headers=headers).json()
+    for server in servers:
+        requests.delete(f"{LETTA_BASE_URL}/v1/mcp-servers/{server['id']}", headers=headers)
+        print(f"  Deleted: {server['server_name']} ({server['id']})")
 
+    # Register new MCP servers
     print("Registering MCP servers...")
     for new_server in MCP_SERVERS:
-        server = client.mcp_servers.create(**new_server)
-        print(f"  Registered: {server.server_name} {server.id}")
+        r = requests.post(f"{LETTA_BASE_URL}/v1/mcp-servers/", headers=headers, json=new_server)
+        server = r.json()
+        print(f"  Registered: {server['server_name']} {server['id']}")
     print("Done.")

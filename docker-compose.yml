@@ -42,7 +42,6 @@ services:
       - SLACK_MCP_XOXP_TOKEN=${SLACK_MCP_XOXP_TOKEN}
     volumes:
       - letta-data:/root/.letta
-      - ./tools:/app/tools
     depends_on:
       letta-db:
         condition: service_healthy

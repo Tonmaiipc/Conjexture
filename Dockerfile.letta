@@ -1,4 +1,4 @@
-FROM letta/letta:latest
+FROM letta/letta:0.16.7
 RUN /app/.venv/bin/python3 -m ensurepip && \
     /app/.venv/bin/python3 -m pip install mem0ai && \
     /app/.venv/bin/python3 -m pip install 'protobuf<6.0' && \

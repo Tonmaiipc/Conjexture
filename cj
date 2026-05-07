@@ -194,10 +194,6 @@ cmd_status() {
   docker compose -f "$COMPOSE_FILE" ps
 }
 
-cmd_ps() {
-  docker compose -f "$COMPOSE_FILE" ps
-}
-
 cmd_backup() {
   header "Backing up Conjexture databases"
   local timestamp
@@ -265,14 +261,20 @@ cmd_mem0_shell() {
 # letta setup
 cmd_letta_agents_register() {
   header "Registering Agents"
-  [ -f "agents/setup.py" ] || error "agents/setup.py not found"
+  [ -f "_letta/agents/setup.py" ] || error "_letta/agents/setup.py not found"
   python3 setup.py --agents
 }
 
 cmd_letta_tools_register() {
   header "Registering Tools"
-  [ -f "tools/setup.py" ] || error "tools/setup.py not found"
+  [ -f "_letta/tools/setup.py" ] || error "_letta/tools/setup.py not found"
   python3 setup.py --tools
+}
+
+cmd_letta_mcp_register() {
+  header "Registering MCP Servers"
+  [ -f "_letta/mcp/setup.py" ] || error "_letta/mcp_servers/setup.py not found"
+  python3 setup.py --mcp
 }
 
 cmd_letta_register_all() {
@@ -316,7 +318,6 @@ cmd_help() {
   echo "Development:"
   echo "  logs [service]          Tail logs (all services, or a specific one)"
   echo "  status                  Show service status, health, and active LLM config"
-  echo "  ps                      Show running containers"
   echo ""
   echo "Data:"
   echo "  backup                  Dump all DB states to ./backups/<timestamp>/"
@@ -327,8 +328,9 @@ cmd_help() {
   echo "  mem0-shell              Open psql into mem0-db"
   echo ""
   echo "Registeration:"
-  echo "  letta-agents-reg        Register agents"
   echo "  letta-tools-reg         Register tools"
+  echo "  letta-mcp-reg           Register MCP servers"
+  echo "  letta-agents-reg        Register agents"
   echo "  letta-all-reg           Register tools, mcp servers, and agents"
   echo "  letta-reset-reg         Remove and register conjexture tools, mcp servers, and agents"
   echo ""
@@ -348,13 +350,14 @@ case "$COMMAND" in
   reset)              cmd_reset ;;
   logs)               cmd_logs "${1:-}" ;;
   status)             cmd_status ;;
-  ps)                 cmd_ps ;;
+  ps)                 cmd_status ;;
   backup)             cmd_backup ;;
   restore)            cmd_restore "${1:-}" ;;
   letta-shell)        cmd_letta_shell ;;
   mem0-shell)         cmd_mem0_shell ;;
-  letta-agents-reg)   cmd_letta_agents_register ;;
   letta-tools-reg)    cmd_letta_tools_register ;;
+  letta-mcp-reg)      cmd_letta_mcp_register ;;
+  letta-agents-reg)   cmd_letta_agents_register ;;
   letta-all-reg)      cmd_letta_register_all ;;
   letta-reset-reg)    cmd_letta_reset_register ;;
   jira-oauth)         cmd_jira_oauth ;;

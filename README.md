@@ -1,98 +1,342 @@
-# Conjexture (cj)
+# Conjexture
 
-A self-hosted org knowledge consolidation platform. Knowledge grows automatically from queries — every investigation result is stored to shared memory, making subsequent queries faster and cheaper.
+**Org Memory Platform** — a self-hosted, memory-first knowledge consolidation platform for engineering teams.
 
-## How it works
+**Conjexture** connects to your org's tools (Slack, Jira, Confluence, and more), investigates questions on your behalf, and stores findings in a shared memory that grows smarter with every query. The more your team asks, the faster and cheaper subsequent queries become.
 
-1. Employee asks a question
-2. User support agent checks shared memory (mem0) first
-3. If found → answer returned immediately
-4. If not → agent investigates (web search, connected tools), stores findings, returns answer
-5. Next query on the same topic → memory hit, investigation skipped
+> "Your org knowledge compounds. Stop searching, start knowing."
 
-## Stack
+---
 
-- **Letta** — agent runtime and orchestration
-- **mem0** — shared org knowledge store
-- **Qdrant** — vector backend for mem0
-- **Postgres + pgvector** — Letta state and mem0 metadata (separate containers)
-- **LM Studio / Ollama** — optional local LLM serving
+## How It Works
 
-## Prerequisites
-
-- Docker + Docker Compose
-- At least one LLM provider (see Configuration)
-
-## Getting started
-
-```bash
-cp .env.example .env
-# Edit .env and configure at least one LLM provider
-./cj init
+```
+┌─────────────────────────────────────────────────────┐
+│                    User / Frontend                   │
+└─────────────────┬───────────────────────────────────┘
+                  │
+┌─────────────────▼───────────────────────────────────┐
+│              User-Support Agent (Letta)              │
+│         Conversational interface, dispatches         │
+└─────────────────┬───────────────────────────────────┘
+                  │ dispatch_to_investigator
+┌─────────────────▼───────────────────────────────────┐
+│             Investigator Agent (Letta)               │
+│                                                      │
+│  1. Check mem0 (shared org memory)                   │
+│  2. If insufficient → fan out to tools               │
+│  3. Store findings to mem0                           │
+│  4. Return answer to user-support                    │
+└──┬──────────┬──────────┬──────────┬─────────────────┘
+   │          │          │          │
+   ▼          ▼          ▼          ▼
+ mem0       Slack      Jira/      Web
+(Qdrant)   (MCP)    Confluence  (SearXNG)
+                      (MCP)
 ```
 
-Letta ADE will be available at http://localhost:8283.
+Next query on same topic → mem0 hit → investigation skipped
 
-## Configuration
+The closed loop is the core value: every investigation makes the next one faster.
 
-Copy `.env.example` to `.env` and fill in the providers you want available. At least one is required.
+---
 
-| Variable | Description |
-|---|---|
-| `OPENAI_API_KEY` | OpenAI API key |
-| `ANTHROPIC_API_KEY` | Anthropic API key |
-| `OPENROUTER_API_KEY` | OpenRouter API key |
-| `LMSTUDIO_BASE_URL` | LM Studio base URL (e.g. `http://host.docker.internal:1234`) |
-| `OLLAMA_BASE_URL` | Ollama base URL (e.g. `http://host.docker.internal:11434`) |
-| `SECURE` | Set `true` to password-protect the Letta server |
-| `LETTA_SERVER_PASSWORD` | Password if `SECURE=true` |
-| `LETTA_DB_URI` | Optional — override bundled Postgres for Letta state |
-| `MEM0_DB_URI` | Optional — override bundled Postgres for mem0 |
+## Features
 
-All configured providers are available in the Letta ADE model dropdown. Model selection is per-agent.
+- **Memory-first retrieval** — shared org knowledge grows from queries, not manual curation
+- **Multi-source investigation** — Slack, Jira, Confluence, web search in a single query
+- **Self-hosted** — your data never leaves your infrastructure
+- **Subagent architecture** — user-support agent dispatches to investigator asynchronously
+- **Conversation isolation** — each topic gets its own investigator conversation, preventing context accumulation
+- **Timestamps on every memory** — staleness is visible, not hidden
 
-**Note on embeddings:** Letta requires an embedding model for archival memory search. OpenAI (`text-embedding-3-small`) and LM Studio (`nomic-embed-text`) both work. Anthropic and OpenRouter do not provide embeddings — if using these as your only provider, you'll also need LM Studio or OpenAI configured for embeddings.
-
-## Commands
-
-```bash
-./cj init        # First-time setup — pull images, start services
-./cj up          # Start all services
-./cj down        # Stop all services
-./cj restart     # Restart all services
-./cj reset       # Wipe all data and restart (destructive)
-
-./cj logs [svc]  # Tail logs
-./cj status      # Service health + active provider config
-./cj ps          # Running containers
-
-./cj backup      # Dump databases to ./backups/<timestamp>/
-./cj restore     # Restore databases from a backup
-
-./cj letta-shell # psql into letta-db
-./cj mem0-shell  # psql into mem0-db
-```
-
-## Agent setup
-
-After `./cj init`, run the Python setup script to create the agents:
-
-```bash
-cd agents
-pip install -r requirements.txt
-python setup.py
-```
-
-This creates the user support agent and investigator subagent with the models specified in `.env`.
+---
 
 ## Architecture
 
-User
-└─▶ User Support Agent (Letta)
-└─▶ Investigator Agent (Letta)
-├─▶ mem0 (shared knowledge store)
-└─▶ Tools (web search, future: Slack, JIRA, Notion...)
+---
+
+## Agents
+
+| Agent | Role | Model |
+|-------|------|-------|
+| `user-support` | User-facing, receives queries, dispatches to investigator, presents answers | DeepSeek V4 Flash |
+| `investigator` | Checks mem0, fans out to tools, stores findings, returns results | DeepSeek V4 Flash |
+
+---
+
+## Stack
+
+| Component | Purpose |
+|-----------|---------|
+| [Letta](https://github.com/letta-ai/letta) | Agent runtime, orchestration, conversational context |
+| [mem0](https://github.com/mem0ai/mem0) | Shared org knowledge store, semantic retrieval |
+| [Qdrant](https://qdrant.tech) | Vector backend for mem0 |
+| PostgreSQL + pgvector | Letta state (letta-db) and mem0 metadata (mem0-db) |
+| [SearXNG](https://github.com/searxng/searxng) | Self-hosted web search |
+| [korotovsky/slack-mcp-server](https://github.com/korotovsky/slack-mcp-server) | Slack MCP server |
+| [sooperset/mcp-atlassian](https://github.com/sooperset/mcp-atlassian) | Jira + Confluence MCP server |
+
+---
+
+## Prerequisites
+
+- Docker and Docker Compose
+- Python 3.10+
+- API keys (see [Configuration](#configuration))
+
+---
+
+## Quick Start
+
+### 1. Clone the repo
+
+```bash
+git clone https://github.com/your-org/ctxpool.git
+cd ctxpool
+```
+
+### 2. Configure environment
+
+```bash
+cp .env.example .env
+```
+
+Edit `.env` with your API keys and configuration. See [Configuration](#configuration) for details.
+
+### 3. Setup Dependencies
+
+```bash
+pip install -r requirements.txt
+```
+
+### 4. Initialize the stack
+
+call the provided cj bash script to setup the infrastructure, tools, mcp servers, and agents.
+
+```bash
+./cj init
+```
+
+This will:
+- Pull all Docker images
+- Start all services
+- Wait for health checks to pass
+
+### 5. Start chatting
+
+1. Open the Letta ADE at [https://app.letta.com](https://app.letta.com) and completes the registration
+2. On the top left menubar, click on the Default Project drop down. Select **Managed Projects**
+3. Select **Self-Hosted servers**, then **Connect to a server**.
+4. In **Server URL**, enter your local letta url (default: `http://localhost:8283`), and Password if set. Then click **Confirm**.
+5. Your local server should appear on the Self-Hosted servers list. Select it to enter its management panel.
+6. Select **View agents** or **agents** menu item. The registered agents **user-support** and **investigator** should appear.
+7. Select **Open in ADE** of the **user-support** agent to start chatting.
+
+---
+
+## Configuration
+
+> **Note:** This configuration guide covers local development and self-hosted deployment.
+> For production deployment (ECS, Kubernetes, managed cloud), you will need to adapt
+> environment variable injection to your infrastructure's secrets management system
+> (AWS Secrets Manager, Vault, etc.) and replace the Docker Compose DB containers
+> with managed database services (RDS, Cloud SQL, etc.).
+
+Copy `.env.example` to `.env` and fill in the required values.
+
+### Required
+
+```bash
+# LLM Provider — pick one
+
+# recommended well tested setup
+DEEPSEEK_API_KEY=sk-...
+OPENROUTER_API_KEY=sk-or-...
+USER_SUPPORT_AGENT_MODEL=deepseek/deepseek-v4-flash
+INVESTIGATOR_AGENT_MODEL=deepseek/deepseek-v4-flash
+LETTA_EMBEDDING_MODEL=openai/text-embedding-3-small
+
+# mem0 LLM (for memory extraction)
+# Uses OpenRouter as a unified gateway. Mem0 only accepts one API key for both LLM and embeddings.
+# Note: OpenRouter is not an official mem0 provider but works via openai-compatible mode.
+MEM0_LLM_MODEL=deepseek/deepseek-v4-flash
+MEM0_LLM_BASE_URL=https://openrouter.ai/api/v1 
+MEM0_LLM_API_KEY=sk-...
+MEM0_EMBEDDING_MODEL=nomic-embed-text
+MEM0_EMBEDDING_BASE_URL=http://host.docker.internal:1234/v1
+MEM0_ORG_ID=your-org-name
+
+```
+
+### Slack Integration
+
+```bash
+# Run ./go up --slack to enable
+SLACK_MCP_XOXB_TOKEN=xoxb-...   # Bot token
+SLACK_MCP_XOXP_TOKEN=xoxp-...   # User token (required for search)
+SLACK_MCP_API_KEY=your-secret   # Internal auth key for MCP server
+```
+
+To create a Slack app and get tokens, see [Slack Setup](#slack-setup).
+
+### Jira + Confluence Integration
+
+**Option A — API Token (recommended, simpler)**
+
+```bash
+# Run ./go up --jira to enable
+JIRA_URL=https://your-org.atlassian.net
+JIRA_USERNAME=your-email@org.com
+JIRA_API_TOKEN=your-api-token
+CONFLUENCE_URL=https://your-org.atlassian.net/wiki
+CONFLUENCE_USERNAME=your-email@org.com
+CONFLUENCE_API_TOKEN=your-api-token
+```
+
+**Option B — OAuth 2.0 (more secure, requires one-time browser setup)**
+
+```bash
+ATLASSIAN_OAUTH_ENABLE=true
+ATLASSIAN_OAUTH_CLIENT_ID=your-client-id
+ATLASSIAN_OAUTH_CLIENT_SECRET=your-client-secret
+ATLASSIAN_OAUTH_CLOUD_ID=your-cloud-id
+ATLASSIAN_OAUTH_REDIRECT_URI=http://localhost:8080/callback
+ATLASSIAN_OAUTH_SCOPE=read:issue:jira read:project:jira read:content:confluence offline_access
+JIRA_URL=https://your-org.atlassian.net
+CONFLUENCE_URL=https://your-org.atlassian.net/wiki
+```
+
+Run `./cjx jira-oauth` once to complete the OAuth flow before starting the Jira MCP server.
+
+---
+
+## Services & Profiles
+
+Services are grouped into Docker Compose profiles:
+
+```bash
+./ctx up              # Core stack only (letta, databases, qdrant)
+./ctx up --search     # + SearXNG web search
+./ctx up --slack      # + Slack MCP server
+./ctx up --jira       # + Jira/Confluence MCP server
+./ctx up --all        # Everything
+```
+
+---
+
+## Slack Setup
+
+1. Go to [api.slack.com/apps](https://api.slack.com/apps) → **Create New App** → **From a manifest**
+2. Paste the manifest from `slack-app-manifest.json` in this repo
+3. Click **Install to Workspace**
+4. Copy the **Bot User OAuth Token** (`xoxb-...`) and **User OAuth Token** (`xoxp-...`) to your `.env`
+5. Join the channels you want Conjexture to have access
+
+---
+
+## Jira OAuth Setup 
+
+### Option A
+
+1. Go to [id.atlassian.com/manage-profile/security/api-tokens](https://id.atlassian.com/manage-profile/security/api-tokens)
+2. Click **Create API token**
+3. Give it a name (e.g. `Conjexture`) and set an expiration date (max 365 days)
+4. Copy the token immediately — it won't be shown again
+5. Add to your `.env`:
+
+```bash
+ATLASSIAN_USERNAME=atlassian-registered@email.com
+JIRA_URL=https://your-org.atlassian.net
+JIRA_API_TOKEN=your-api-token
+CONFLUENCE_URL=https://your-org.atlassian.net/wiki
+CONFLUENCE_API_TOKEN=your-api-token
+```
+
+> **Note:** If you select **Create API token** optoin, the same API token works for both Jira and Confluence. `CONFLUENCE_API_TOKEN` and `JIRA_API_TOKEN` should be the same value.
+
+> **Token expiry:** Atlassian API tokens expire after a maximum of 365 days. Set a calendar reminder to rotate before expiry to avoid service interruption.
+
+### Option B
+
+1. Create an OAuth 2.0 app at [developer.atlassian.com/console/myapps](https://developer.atlassian.com/console/myapps)
+2. Add callback URL: `http://localhost:8080/callback`
+3. Add required scopes (see `.env.example`)
+4. Copy Client ID and Secret to `.env`
+5. Run `./go jira-oauth` and complete the browser flow
+6. Tokens are stored in `.mcp-atlassian/` — gitignored
+
+For remote server deployment, run `./go jira-oauth` locally and copy `.mcp-atlassian/` to your server.
+
+---
+
+## Production Deployment
+
+Production deployment is out of scope for this guide. At a high level:
+
+- Replace `letta-db` and `mem0-db` containers with managed Postgres (RDS, Supabase, Neon)
+- Deploy services to your compute platform of choice (ECS Fargate, EC2, Kubernetes)
+- Use your infrastructure's secrets management for environment variables
+- Use a container registry (ECR, GCR) for custom images
+- Terraform templates coming soon
+
+---
+
+## Roadmap
+
+**POC (current)**
+- [x] User-support + investigator agent loop
+- [x] mem0 shared knowledge store
+- [x] Web search via SearXNG
+- [x] Slack integration via MCP
+- [x] Jira + Confluence integration via MCP
+- [x] Conversation-per-topic isolation
+- [x] mem0 hit/miss loop proven
+
+**MVP (next)**
+- [ ] Frontend — research-dispatch-centric chat UI
+- [ ] Slack bot — passive ingestion
+- [ ] Agent reliability testing — 10 query pair test suite
+- [ ] mem0 hit rate instrumentation
+- [ ] Multi-user support
+
+**Future**
+- [ ] Sleep-time memory consolidation agent
+- [ ] Notion, Google Drive, git connectors
+- [ ] Proactive insights ("three teams are solving the same problem")
+- [ ] Memory decay and cleanup
+- [ ] Multi-tenant architecture
+
+---
+
+## Why **Conjexture**?
+
+
+Most org knowledge tools are search-first and stateless — they find information but don't learn from queries. 
+
+1. **Conjexture** is memory-first:
+- **Glean, Dust, Rovo, Notion AI** — search returns results, session ends, nothing is remembered
+- **Conjexture** — every investigation is stored back to shared memory, making the next query faster and cheaper.
+
+**The system compounds over time.**
+
+2. **SaaS agnostic** — connects to your existing tools, no ecosystem lock-in
+3. **LLM agnostic** — bring your own API key, swap models anytime
+4. **Self-hosted** — your data never leaves your infrastructure
+
+
+---
 
 ## License
 
 MIT
+
+---
+
+## Contributing
+
+PRs welcome. See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
+
+---
+
+*Built with [Letta](https://github.com/letta-ai/letta) and [mem0](https://github.com/mem0ai/mem0).*

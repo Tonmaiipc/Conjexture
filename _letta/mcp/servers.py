@@ -12,7 +12,7 @@ MCP_SERVERS = [
         "server_name": "slack-mcp",
         "config": {
             "mcp_server_type": "streamable_http",
-            "server_url": "http://ctxpool-slack-mcp:3001/mcp",
+            "server_url": "http://slack-mcp:3001/mcp",
             "auth_header": "Authorization",
             "auth_token": "mocked-secret-token-for-dev"
         }
@@ -21,7 +21,7 @@ MCP_SERVERS = [
         "server_name": "jira-mcp",
         "config": {
             "mcp_server_type": "streamable_http",
-            "server_url": "http://ctxpool-jira-mcp:3002/mcp"
+            "server_url": "http://jira-mcp:3002/mcp"
         }
     }
 ]

@@ -1,4 +1,4 @@
-# ContextPool (ctxpool)
+# Conjexture (cj)
 
 A self-hosted org knowledge consolidation platform. Knowledge grows automatically from queries — every investigation result is stored to shared memory, making subsequent queries faster and cheaper.
 
@@ -28,7 +28,7 @@ A self-hosted org knowledge consolidation platform. Knowledge grows automaticall
 ```bash
 cp .env.example .env
 # Edit .env and configure at least one LLM provider
-./ctx init
+./cj init
 ```
 
 Letta ADE will be available at http://localhost:8283.
@@ -56,26 +56,26 @@ All configured providers are available in the Letta ADE model dropdown. Model se
 ## Commands
 
 ```bash
-./ctx init        # First-time setup — pull images, start services
-./ctx up          # Start all services
-./ctx down        # Stop all services
-./ctx restart     # Restart all services
-./ctx reset       # Wipe all data and restart (destructive)
+./cj init        # First-time setup — pull images, start services
+./cj up          # Start all services
+./cj down        # Stop all services
+./cj restart     # Restart all services
+./cj reset       # Wipe all data and restart (destructive)
 
-./ctx logs [svc]  # Tail logs
-./ctx status      # Service health + active provider config
-./ctx ps          # Running containers
+./cj logs [svc]  # Tail logs
+./cj status      # Service health + active provider config
+./cj ps          # Running containers
 
-./ctx backup      # Dump databases to ./backups/<timestamp>/
-./ctx restore     # Restore databases from a backup
+./cj backup      # Dump databases to ./backups/<timestamp>/
+./cj restore     # Restore databases from a backup
 
-./ctx letta-shell # psql into letta-db
-./ctx mem0-shell  # psql into mem0-db
+./cj letta-shell # psql into letta-db
+./cj mem0-shell  # psql into mem0-db
 ```
 
 ## Agent setup
 
-After `./ctx init`, run the Python setup script to create the agents:
+After `./cj init`, run the Python setup script to create the agents:
 
 ```bash
 cd agents

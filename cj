@@ -17,9 +17,9 @@ YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m'
 
-log()    { echo -e "${GREEN}[ctxpool]${NC} $1"; }
-warn()   { echo -e "${YELLOW}[ctxpool]${NC} $1"; }
-error()  { echo -e "${RED}[ctxpool]${NC} $1"; exit 1; }
+log()    { echo -e "${GREEN}[conjexture]${NC} $1"; }
+warn()   { echo -e "${YELLOW}[conjexture]${NC} $1"; }
+error()  { echo -e "${RED}[conjexture]${NC} $1"; exit 1; }
 header() { echo -e "\n${BLUE}=== $1 ===${NC}"; }
 
 require() {
@@ -71,7 +71,7 @@ _wait_healthy() {
     elapsed=$((elapsed + 2))
   done
 
-  warn "$container did not become healthy within ${timeout}s — check logs with: ./ctx logs $container"
+  warn "$container did not become healthy within ${timeout}s — check logs with: ./cj logs $container"
 }
 
 _docker_compose() {
@@ -105,17 +105,17 @@ _parse_profiles() {
 }
 
 cmd_build() {
-  header "Building ContextPool images"
+  header "Building Conjexture images"
   require docker
-  docker build -f Dockerfile.letta -t ctxpool-letta:latest .
-  log "Done. Run ./ctx init' or './ctx up' to start."
+  docker build -f Dockerfile.letta -t conjexture-letta:latest .
+  log "Done. Run ./cj init' or './cj up' to start."
 }
 
 cmd_init() {
   local profiles
   profiles=$(_parse_profiles "--all")
 
-  header "Initializing ContextPool"
+  header "Initializing Conjexture"
   require docker
   _check_env
   _log_llm_config
@@ -129,8 +129,8 @@ cmd_init() {
   _docker_compose "$profiles" up -d
 
   log "Waiting for services to be healthy..."
-  _wait_healthy "ctxpool-letta-db" 30
-  _wait_healthy "ctxpool-mem0-db" 30
+  _wait_healthy "conjexture-letta-db" 30
+  _wait_healthy "conjexture-mem0-db" 30
 
   log "Done. Letta ADE available at http://localhost:8283"
 }
@@ -139,7 +139,7 @@ cmd_up() {
   local profiles
   profiles=$(_parse_profiles "$@")
 
-  header "Starting ContextPool"
+  header "Starting Conjexture"
   _check_env
   _log_llm_config
   _docker_compose "$profiles" up -d
@@ -151,7 +151,7 @@ cmd_down() {
   profiles=$(_parse_profiles "$@")
   echo "profiles: '$profiles'"
 
-  header "Stopping ContextPool"
+  header "Stopping Conjexture"
   _docker_compose "$profiles" down
   log "Services stopped."
 }
@@ -160,7 +160,7 @@ cmd_restart() {
   local profiles
   profiles=$(_parse_profiles "$@")
 
-  header "Restarting ContextPool"
+  header "Restarting Conjexture"
   _docker_compose "$profiles" restart
   log "Services restarted."
 }
@@ -169,7 +169,7 @@ cmd_reset() {
   local profiles
   profiles=$(_parse_profiles "$@")
   
-  header "Resetting ContextPool"
+  header "Resetting Conjexture"
   warn "This will DELETE all volumes and data. Are you sure? (y/N)"
   read -r confirm
   [[ "$confirm" =~ ^[Yy]$ ]] || { log "Aborted."; exit 0; }
@@ -190,7 +190,7 @@ cmd_logs() {
 }
 
 cmd_status() {
-  header "ContextPool Status"
+  header "Conjexture Status"
   docker compose -f "$COMPOSE_FILE" ps
 }
 
@@ -199,19 +199,19 @@ cmd_ps() {
 }
 
 cmd_backup() {
-  header "Backing up ContextPool databases"
+  header "Backing up Conjexture databases"
   local timestamp
   timestamp=$(date +%Y%m%d_%H%M%S)
   local backup_path="$BACKUP_DIR/$timestamp"
   mkdir -p "$backup_path"
 
   log "Backing up letta-db..."
-  docker exec ctxpool-letta-db \
+  docker exec conjexture-letta-db \
     pg_dump -U letta letta \
     > "$backup_path/letta-db.sql"
 
   log "Backing up mem0-db..."
-  docker exec ctxpool-mem0-db \
+  docker exec conjexture-mem0-db \
     pg_dump -U mem0 mem0 \
     > "$backup_path/mem0-db.sql"
 
@@ -219,7 +219,7 @@ cmd_backup() {
 }
 
 cmd_restore() {
-  header "Restoring ContextPool databases"
+  header "Restoring Conjexture databases"
   local backup_path="${1:-}"
 
   if [ -z "$backup_path" ]; then
@@ -240,12 +240,12 @@ cmd_restore() {
   [[ "$confirm" =~ ^[Yy]$ ]] || { log "Aborted."; exit 0; }
 
   log "Restoring letta-db..."
-  docker exec -i ctxpool-letta-db \
+  docker exec -i conjexture-letta-db \
     psql -U letta letta \
     < "$backup_path/letta-db.sql"
 
   log "Restoring mem0-db..."
-  docker exec -i ctxpool-mem0-db \
+  docker exec -i conjexture-mem0-db \
     psql -U mem0 mem0 \
     < "$backup_path/mem0-db.sql"
 
@@ -254,12 +254,12 @@ cmd_restore() {
 
 cmd_letta_shell() {
   header "Letta DB Shell"
-  docker exec -it ctxpool-letta-db psql -U letta -d letta
+  docker exec -it conjexture-letta-db psql -U letta -d letta
 }
 
 cmd_mem0_shell() {
   header "mem0 DB Shell"
-  docker exec -it ctxpool-mem0-db psql -U mem0 -d mem0
+  docker exec -it conjexture-mem0-db psql -U mem0 -d mem0
 }
 
 # letta setup
@@ -296,12 +296,12 @@ cmd_jira_oauth() {
     -e ATLASSIAN_OAUTH_REDIRECT_URI="${ATLASSIAN_OAUTH_REDIRECT_URI:-http://localhost:8080/callback}" \
     ghcr.io/sooperset/mcp-atlassian:latest \
     --oauth-setup -v
-  log "OAuth setup complete. Run './ctx up --jira' to start the Jira MCP server or ./ctx up --all to start all services."
+  log "OAuth setup complete. Run './cj up --jira' to start the Jira MCP server or ./cj up --all to start all services."
 }
 
 cmd_help() {
   echo ""
-  echo "Usage: ./ctx <command>"
+  echo "Usage: ./cj <command>"
   echo ""
   echo "Before running: copy .env.example to .env and fill in your values."
   echo ""
@@ -327,10 +327,10 @@ cmd_help() {
   echo "  mem0-shell              Open psql into mem0-db"
   echo ""
   echo "Registeration:"
-  echo "  letta-agents-reg        Register ctxcontext agents"
-  echo "  letta-tools-reg         Register ctxcontext tools"
-  echo "  letta-all-reg           Register ctxcontext agents and tools"
-  echo "  letta-reset-reg         Remove and register ctxcontext agents and tools"
+  echo "  letta-agents-reg        Register agents"
+  echo "  letta-tools-reg         Register tools"
+  echo "  letta-all-reg           Register tools, mcp servers, and agents"
+  echo "  letta-reset-reg         Remove and register conjexture tools, mcp servers, and agents"
   echo ""
   echo "Integration:"
   echo "  jira-oauth              Setup Jira OAuth"
@@ -359,5 +359,5 @@ case "$COMMAND" in
   letta-reset-reg)    cmd_letta_reset_register ;;
   jira-oauth)         cmd_jira_oauth ;;
   help|--help)        cmd_help ;;
-  *)                  error "Unknown command: $COMMAND. Run './ctx help' for usage." ;;
+  *)                  error "Unknown command: $COMMAND. Run './cj help' for usage." ;;
 esac

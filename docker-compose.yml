@@ -1,5 +1,5 @@
 # docker-compose.yml
-# ContextPool POC Stack — Letta + mem0 + Qdrant
+# Conjexture Stack — Letta + mem0 + Qdrant
 
 services:
 
@@ -7,8 +7,8 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.letta
-    image: ctxpool-letta:latest
-    container_name: ctxpool-letta
+    image: conjexture-letta:latest
+    container_name: letta
     ports:
       - "8283:8283"
     environment:
@@ -51,7 +51,7 @@ services:
 
   letta-db:
     image: pgvector/pgvector:pg16
-    container_name: ctxpool-letta-db
+    container_name: letta-db
     environment:
       - POSTGRES_USER=${LETTA_DB_USERNAME:-letta}
       - POSTGRES_PASSWORD=${LETTA_DB_PASSWORD:-letta}
@@ -68,7 +68,7 @@ services:
 
   qdrant:
     image: qdrant/qdrant:latest
-    container_name: ctxpool-qdrant
+    container_name: qdrant
     ports:
       - "6333:6333"
       - "6334:6334"
@@ -78,7 +78,7 @@ services:
 
   mem0-db:
     image: pgvector/pgvector:pg16
-    container_name: ctxpool-mem0-db
+    container_name: mem0-db
     environment:
       - POSTGRES_USER=${MEM0_DB_USERNAME:-mem0}
       - POSTGRES_PASSWORD=${MEM0_DB_PASSWORD:-mem0}
@@ -95,7 +95,7 @@ services:
 
   searxng:
     image: searxng/searxng
-    container_name: ctxpool-searxng
+    container_name: searxng
     profiles:
       - search
     ports:
@@ -108,7 +108,7 @@ services:
 
   slack-mcp:
     image: ghcr.io/korotovsky/slack-mcp-server:latest
-    container_name: ctxpool-slack-mcp
+    container_name: slack-mcp
     profiles:
       - slack
     ports:
@@ -124,7 +124,7 @@ services:
 
   jira-mcp:
     image: ghcr.io/sooperset/mcp-atlassian:latest
-    container_name: ctxpool-jira-mcp
+    container_name: jira-mcp
     profiles:
       - jira
     ports:

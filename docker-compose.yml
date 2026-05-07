@@ -133,7 +133,7 @@ services:
       - ATLASSIAN_OAUTH_CLIENT_SECRET=${ATLASSIAN_OAUTH_CLIENT_SECRET}
       - ATLASSIAN_OAUTH_REDIRECT_URI=http://localhost:8080/callback
       - ATLASSIAN_OAUTH_CLOUD_ID=e7d89018-3348-48b7-82eb-0c81515b23e3
-      - ATLASSIAN_OAUTH_SCOPE=read:issue:jira read:project:jira read:user:jira read:sprint:jira-software read:epic:jira-software read:content:confluence read:space:confluence offline_access
+      - ATLASSIAN_OAUTH_SCOPE=read:issue:jira read:issue-meta:jira read:comment:jira read:field:jira read:priority:jira read:issue-details:jira read:issue-type:jira read:issue-worklog:jira read:issue-status:jira read:issue.changelog:jira read:user:jira read:label:jira read:project:jira read:project.feature:jira read:issue.time-tracking:jira read:workflow:jira read:epic:jira-software read:issue:jira-software read:sprint:jira-software read:content:confluence read:content-details:confluence read:space-details:confluence read:page:confluence read:attachment:confluence read:comment:confluence read:space:confluence read:confluence-space.summary read:confluence-content.all read:confluence-content.summary search:confluence read:jira-work offline_access
       - JIRA_URL=https://pavarit-ch.atlassian.net
       - CONFLUENCE_URL=https://pavarit-ch.atlassian.net/wiki
     volumes:

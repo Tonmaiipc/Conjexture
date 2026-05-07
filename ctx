@@ -113,7 +113,7 @@ cmd_build() {
 
 cmd_init() {
   local profiles
-  profiles=$(_parse_profiles "$@")
+  profiles=$(_parse_profiles "--all")
 
   header "Initializing ContextPool"
   require docker
@@ -122,6 +122,8 @@ cmd_init() {
 
   log "Pulling Docker images..."
   _docker_compose "$profiles" pull --ignore-buildable
+
+  cmd_build
 
   log "Starting services..."
   _docker_compose "$profiles" up -d

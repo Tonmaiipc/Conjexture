@@ -92,8 +92,8 @@ The closed loop is the core value: every investigation makes the next one faster
 ### 1. Clone the repo
 
 ```bash
-git clone https://github.com/your-org/ctxpool.git
-cd ctxpool
+git clone https://github.com/your-org/conjexture.git
+cd conjexture
 ```
 
 ### 2. Configure environment

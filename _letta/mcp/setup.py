@@ -1,5 +1,5 @@
 import os
-from anyio import Path
+from pathlib import Path
 from dotenv import load_dotenv
 import requests
 from _letta.mcp.servers import MCP_SERVERS

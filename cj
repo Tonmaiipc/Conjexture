@@ -132,6 +132,8 @@ cmd_init() {
   _wait_healthy "conjexture-letta-db" 30
   _wait_healthy "conjexture-mem0-db" 30
 
+  cmd_letta_reset_register
+
   log "Done. Letta ADE available at http://localhost:8283"
 }
 

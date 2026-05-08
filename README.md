@@ -247,7 +247,7 @@ Services are grouped into Docker Compose profiles:
 5. Join the channels you want Conjexture to have access
 
 
-### Jira Auth Setup 
+### Atlassian Auth Setup 
 
 **Option A**
 1. Go to [id.atlassian.com/manage-profile/security/api-tokens](https://id.atlassian.com/manage-profile/security/api-tokens)

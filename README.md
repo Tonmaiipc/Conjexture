@@ -6,7 +6,21 @@
 
 > "Your org knowledge compounds. Stop searching, start knowing."
 
----
+
+## Why **Conjexture**?
+
+Most org knowledge tools are search-first and stateless — they find information but don't learn from queries. 
+
+1. **Conjexture** is memory-first:
+- **Glean, Dust, Rovo, Notion AI** — search returns results, session ends, nothing is remembered
+- **Conjexture** — every investigation is stored back to shared memory, making the next query faster and cheaper.
+
+**The system compounds over time.**
+
+2. **SaaS agnostic** — connects to your existing tools, no ecosystem lock-in
+3. **LLM agnostic** — bring your own API key, swap models anytime
+4. **Self-hosted** — your data never leaves your infrastructure
+
 
 ## How It Works
 
@@ -39,7 +53,6 @@ Next query on same topic → mem0 hit → investigation skipped
 
 The closed loop is the core value: every investigation makes the next one faster.
 
----
 
 ## Features
 
@@ -56,7 +69,6 @@ The closed loop is the core value: every investigation makes the next one faster
 
 <img width="795" height="634" alt="image" src="https://github.com/user-attachments/assets/ec0720eb-4e42-4579-8371-7195a1fb6008" />
 
----
 
 ## Agents
 
@@ -65,7 +77,6 @@ The closed loop is the core value: every investigation makes the next one faster
 | `user-support` | User-facing, receives queries, dispatches to investigator, presents answers | DeepSeek V4 Flash |
 | `investigator` | Checks mem0, fans out to tools, stores findings, returns results | DeepSeek V4 Flash |
 
----
 
 ## Stack
 
@@ -79,7 +90,6 @@ The closed loop is the core value: every investigation makes the next one faster
 | [korotovsky/slack-mcp-server](https://github.com/korotovsky/slack-mcp-server) | Slack MCP server |
 | [sooperset/mcp-atlassian](https://github.com/sooperset/mcp-atlassian) | Jira + Confluence MCP server |
 
----
 
 ## Prerequisites
 
@@ -227,9 +237,8 @@ Services are grouped into Docker Compose profiles:
 ./ctx up --all        # Everything
 ```
 
----
 
-## Slack Setup
+### Slack Setup
 
 1. Go to [api.slack.com/apps](https://api.slack.com/apps) → **Create New App** → **From a manifest**
 2. Paste the manifest from `slack-app-manifest.json` in this repo
@@ -237,12 +246,10 @@ Services are grouped into Docker Compose profiles:
 4. Copy the **Bot User OAuth Token** (`xoxb-...`) and **User OAuth Token** (`xoxp-...`) to your `.env`
 5. Join the channels you want Conjexture to have access
 
----
 
-## Jira Auth Setup 
+### Jira Auth Setup 
 
-### Option A
-
+**Option A**
 1. Go to [id.atlassian.com/manage-profile/security/api-tokens](https://id.atlassian.com/manage-profile/security/api-tokens)
 2. Click **Create API token**
 3. Give it a name (e.g. `Conjexture`) and set an expiration date (max 365 days)
@@ -261,8 +268,7 @@ CONFLUENCE_API_TOKEN=your-api-token
 
 > **Token expiry:** Atlassian API tokens expire after a maximum of 365 days. Set a calendar reminder to rotate before expiry to avoid service interruption.
 
-### Option B
-
+**Option B**
 1. Create an OAuth 2.0 app at [developer.atlassian.com/console/myapps](https://developer.atlassian.com/console/myapps)
 2. Add callback URL: `http://localhost:8080/callback`
 3. Add required scopes (see `.env.example`)
@@ -311,24 +317,6 @@ Production deployment is out of scope for this guide. At a high level:
 - [ ] Proactive insights ("three teams are solving the same problem")
 - [ ] Memory decay and cleanup
 - [ ] Multi-tenant architecture
-
----
-
-## Why **Conjexture**?
-
-
-Most org knowledge tools are search-first and stateless — they find information but don't learn from queries. 
-
-1. **Conjexture** is memory-first:
-- **Glean, Dust, Rovo, Notion AI** — search returns results, session ends, nothing is remembered
-- **Conjexture** — every investigation is stored back to shared memory, making the next query faster and cheaper.
-
-**The system compounds over time.**
-
-2. **SaaS agnostic** — connects to your existing tools, no ecosystem lock-in
-3. **LLM agnostic** — bring your own API key, swap models anytime
-4. **Self-hosted** — your data never leaves your infrastructure
-
 
 ---
 

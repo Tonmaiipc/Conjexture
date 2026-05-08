@@ -211,6 +211,8 @@ CONFLUENCE_URL=https://your-org.atlassian.net/wiki
 
 Run `./cjx jira-oauth` once to complete the OAuth flow before starting the Jira MCP server.
 
+To get Atlassian's tokens, see [Atlassian Setup](#jira-auth-setup).
+
 ---
 
 ## Services & Profiles
@@ -237,7 +239,7 @@ Services are grouped into Docker Compose profiles:
 
 ---
 
-## Jira OAuth Setup 
+## Jira Auth Setup 
 
 ### Option A
 

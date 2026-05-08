@@ -300,6 +300,7 @@ Production deployment is out of scope for this guide. At a high level:
 - [ ] Slack bot — passive ingestion
 - [ ] Agent reliability testing — 10 query pair test suite
 - [ ] mem0 hit rate instrumentation
+- [ ] Conjexture exposed as an MCP tool for Claude Desktop, Cursor, and other LLM clients
 - [ ] Multi-user support
 
 **Future**

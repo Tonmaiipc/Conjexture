@@ -54,6 +54,8 @@ The closed loop is the core value: every investigation makes the next one faster
 
 ## Architecture
 
+<img width="795" height="634" alt="image" src="https://github.com/user-attachments/assets/ec0720eb-4e42-4579-8371-7195a1fb6008" />
+
 ---
 
 ## Agents

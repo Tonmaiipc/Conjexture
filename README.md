@@ -294,7 +294,7 @@ Production deployment is out of scope for this guide. At a high level:
 
 ## Roadmap
 
-**POC (current)**
+**Done**
 - [x] User-support + investigator agent loop
 - [x] mem0 shared knowledge store
 - [x] Web search via SearXNG
@@ -303,19 +303,27 @@ Production deployment is out of scope for this guide. At a high level:
 - [x] Conversation-per-topic isolation
 - [x] mem0 hit/miss loop proven
 
-**MVP (next)**
-- [ ] Frontend — research-dispatch-centric chat UI
-- [ ] Slack bot — passive ingestion
+**Next**
 - [ ] Agent reliability testing — 10 query pair test suite
+- [ ] mem0 write quality audit — manually inspect what's stored
+- [ ] Stale memory handling — contradictory memories strategy
 - [ ] mem0 hit rate instrumentation
+- [ ] Source provenance on mem0 writes — source, timestamp, captured_by
+- [ ] Document Slack token scope — public channels only
 - [ ] Conjexture exposed as an MCP tool for Claude Desktop, Cursor, and other LLM clients
+
+**Team Engagement**
+- [ ] Slack bot — passive ingestion
+- [ ] Frontend — research-dispatch-centric chat UI
 - [ ] Multi-user support
 
 **Future**
 - [ ] Sleep-time memory consolidation agent
+- [ ] Memory decay and cleanup
 - [ ] Notion, Google Drive, git connectors
 - [ ] Proactive insights ("three teams are solving the same problem")
-- [ ] Memory decay and cleanup
+
+**Enterprise**
 - [ ] Multi-tenant architecture
 
 ---

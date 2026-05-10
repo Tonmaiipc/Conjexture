@@ -349,7 +349,7 @@ case "$COMMAND" in
   up)                 cmd_up "$@" ;;
   down)               cmd_down "$@" ;;
   restart)            cmd_restart "$@" ;;
-  reset)              cmd_reset ;;
+  reset)              cmd_reset "$@" ;;
   logs)               cmd_logs "${1:-}" ;;
   status)             cmd_status ;;
   ps)                 cmd_status ;;

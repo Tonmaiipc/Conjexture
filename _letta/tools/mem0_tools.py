@@ -12,6 +12,7 @@ def mem0_search_memory(query: str) -> str:
     """
     import os
     from mem0 import Memory
+    from datetime import datetime, timezone        
 
     config = {
         "llm": {
@@ -41,19 +42,38 @@ def mem0_search_memory(query: str) -> str:
     }
     org_id = os.environ["MEM0_ORG_ID"]
     m = Memory.from_config(config)
-    results = m.search(query, filters={"user_id": org_id})
+    results = m.search(query, filters={"user_id": org_id}, limit=100)
     
     if not results:
         return "No relevant memories found."
 
     lines = []
     
-    for r in results.get("results", []):
-        if r is None:
+    for record in results.get("results", []):
+        if record is None:
             continue
-        stored_at = r["created_at"]
-        source_ts = (r.get("metadata") or {}).get("source_timestamp", "unknown")
-        lines.append(f"[stored: {stored_at}, source: {source_ts}] {r['memory']}")
+
+        try:
+            current_metadata = record.get("metadata") or {}
+            m.update(
+                memory_id=record["id"],
+                data=record["memory"],  # text unchanged
+                metadata={
+                    **current_metadata,
+                    "hit_count": current_metadata.get("hit_count", 0) + 1,
+                    "last_hit": datetime.now(timezone.utc).isoformat()
+                }
+            )
+        except Exception:
+            pass  # never let hit counting break retrieval
+
+        source_ts = (record.get("metadata") or {}).get("source_timestamp", "unknown")
+        try:
+            source_ts = datetime.fromisoformat(source_ts).strftime("%Y-%m-%d %H:%M:%S")
+        except Exception:
+            pass
+        retrieval_count = (record.get("metadata") or {}).get("hit_count", 0)
+        lines.append(f"[sourced: {source_ts}, retrieval_count: {retrieval_count}] {record['memory']}")
     return "\n".join(lines)
 
 

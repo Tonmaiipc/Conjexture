@@ -12,7 +12,8 @@ def mem0_search_memory(query: str) -> str:
     """
     import os
     from mem0 import Memory
-    from datetime import datetime, timezone        
+    from datetime import datetime, timezone     
+    import psycopg2   
 
     config = {
         "llm": {
@@ -46,13 +47,29 @@ def mem0_search_memory(query: str) -> str:
     
     if not results:
         return "No relevant memories found."
-
-    lines = []
     
+    # Log the query and whether it was a hit (found any results) to the database
+    hit = bool(results.get("results"))
+    try:
+        conn = psycopg2.connect(os.environ["MEM0_DB_URI"])
+        cur = conn.cursor()
+        cur.execute(
+            "INSERT INTO query_logs (query, mem0_hit) VALUES (%s, %s)",
+            (query, hit)
+        )
+        conn.commit()
+        cur.close()
+        conn.close()
+    except Exception:
+        pass
+
+    # format the output
+    lines = []    
     for record in results.get("results", []):
         if record is None:
             continue
-
+        
+        # Update hit count and last hit timestamp in metadata
         try:
             current_metadata = record.get("metadata") or {}
             m.update(

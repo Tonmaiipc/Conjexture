@@ -34,7 +34,7 @@ services:
       - MEM0_EMBEDDING_BASE_URL=${MEM0_EMBEDDING_BASE_URL:-}
       - MEM0_ORG_ID=${MEM0_ORG_ID:-}
       - MEM0_LLM_API_KEY=${MEM0_LLM_API_KEY:-}
-      - MEMO_DB_URI=${MEM0_DB_URI:-postgresql://mem0:mem0@mem0-db:5432/mem0}
+      - MEM0_DB_URI=${MEM0_DB_URI:-}
       # other tools config
       - QDRANT_HOST=${QDRANT_HOST}
       - QDRANT_PORT=${QDRANT_PORT}

@@ -1,3 +1,4 @@
+# not required, was used as workaround for Slack API token permissions issues. Keeping for reference in case we need to re-implement in the future. 
 def slack_list_channels() -> str:
     """
     List all Slack channels the user has access to.

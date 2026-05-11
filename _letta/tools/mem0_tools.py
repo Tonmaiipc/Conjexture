@@ -38,7 +38,7 @@ def mem0_search_memory(query: str) -> str:
                 "port": int(os.environ["QDRANT_PORT"]),
                 "collection_name": os.environ["QDRANT_COLLECTION"],
             }
-        }
+        },
     }
     org_id = os.environ["MEM0_ORG_ID"]
     m = Memory.from_config(config)
@@ -128,7 +128,8 @@ Return a JSON object with a facts array.
                 "collection_name": os.environ["QDRANT_COLLECTION"],
             }
         },
-        "custom_fact_extraction_prompt": custom_fact_extraction_prompt
+        "custom_fact_extraction_prompt": custom_fact_extraction_prompt,
+        "history_db_path": os.environ["MEM0_DB_URI"]
     }
 
     org_id = os.environ["MEM0_ORG_ID"]

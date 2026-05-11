@@ -302,15 +302,15 @@ Production deployment is out of scope for this guide. At a high level:
 - [x] Jira + Confluence integration via MCP
 - [x] Conversation-per-topic isolation
 - [x] mem0 hit/miss loop proven
+- [x] Agent reliability testing — 10 query pair test suite
+- [x] mem0 write quality audit — manually inspect what's stored
+- [x] mem0 hit rate instrumentation
 
 **Next**
-- [ ] Agent reliability testing — 10 query pair test suite
-- [ ] mem0 write quality audit — manually inspect what's stored
+- [ ] Conjexture exposed as an MCP tool for Claude Desktop, Cursor, and other LLM clients
 - [ ] Stale memory handling — contradictory memories strategy
-- [ ] mem0 hit rate instrumentation
 - [ ] Source provenance on mem0 writes — source, timestamp, captured_by
 - [ ] Document Slack token scope — public channels only
-- [ ] Conjexture exposed as an MCP tool for Claude Desktop, Cursor, and other LLM clients
 
 **Team Engagement**
 - [ ] Slack bot — passive ingestion

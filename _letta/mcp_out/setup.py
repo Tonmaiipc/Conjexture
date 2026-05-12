@@ -2,7 +2,7 @@ import os
 from pathlib import Path
 from dotenv import load_dotenv
 import requests
-from _letta.mcp.servers import MCP_SERVERS
+from _letta.mcp_out.servers import MCP_SERVERS
 
 ROOT = Path(__file__).parent.parent.parent
 load_dotenv(ROOT / ".env")

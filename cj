@@ -275,7 +275,7 @@ cmd_letta_tools_register() {
 
 cmd_letta_mcp_register() {
   header "Registering MCP Servers"
-  [ -f "_letta/mcp/setup.py" ] || error "_letta/mcp_servers/setup.py not found"
+  [ -f "_letta/mcp_out/setup.py" ] || error "_letta/mcp_out/setup.py not found"
   python3 setup.py --mcp
 }
 

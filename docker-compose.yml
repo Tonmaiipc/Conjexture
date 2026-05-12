@@ -123,9 +123,9 @@ services:
     command: ["-t", "http"]
     restart: unless-stopped
 
-  jira-mcp:
+  atlassian-mcp:
     image: ghcr.io/sooperset/mcp-atlassian:latest
-    container_name: jira-mcp
+    container_name: atlassian-mcp
     profiles:
       - jira
     ports:

@@ -18,10 +18,10 @@ MCP_SERVERS = [
         }
     },
     {
-        "server_name": "jira-mcp",
+        "server_name": "atlassian-mcp",
         "config": {
             "mcp_server_type": "streamable_http",
-            "server_url": "http://jira-mcp:3002/mcp"
+            "server_url": "http://atlassian-mcp:3002/mcp"
         }
     }
 ]

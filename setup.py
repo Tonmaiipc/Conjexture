@@ -1,7 +1,7 @@
 import argparse
 import _letta.tools.setup as tools_setup
 import _letta.agents.setup as agents_setup
-import _letta.mcp.setup as mcp_setup
+import _letta.mcp_out.setup as mcp_setup
 
 def main():
     parser = argparse.ArgumentParser()

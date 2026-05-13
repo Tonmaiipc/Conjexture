@@ -1,0 +1,39 @@
+{
+  "name": "mcp-investigator",
+  "model": "deepseek/deepseek-v4-flash",
+  "model_endpoint_type": "deepseek",
+  "embedding": "openai/text-embedding-3-small",
+  "agent_type": "letta_v1_agent",
+  "include_base_tools": true,
+  "include_multi_agent_tools": true,
+  "tools": [
+    "mem0_search_memory",
+    "mem0_write_memory",
+    "fetch_webpage",
+    "searxng_search",
+    "send_message",
+    "conversations_search_messages",
+    "conversations_history",
+    "conversations_replies",
+    "channels_list",
+    "users_search",
+    "slack_list_channels",
+    "jira_search",
+    "jira_get_issue",
+    "jira_get_project_issues",
+    "jira_get_all_projects",
+    "jira_get_sprints_from_board",
+    "jira_get_sprint_issues",
+    "jira_batch_get_changelogs",
+    "jira_get_issue_dates",
+    "confluence_search",
+    "confluence_get_page",
+    "confluence_get_page_children",
+    "confluence_get_space_page_tree",
+    "confluence_get_comments"
+  ],
+  "initial_message_sequence": [],
+  "model_settings": {
+    "reasoning": {"reasoning_effort": "none"}
+  }
+}

@@ -47,6 +47,12 @@ services:
       letta-db:
         condition: service_healthy
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python3", "-c", "import urllib.request, sys; r = urllib.request.urlopen('http://localhost:8283/v1/agents', timeout=5); sys.exit(0 if r.status == 200 else 1)"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 30s
     extra_hosts:
       - "host.docker.internal:host-gateway"
 
@@ -148,6 +154,25 @@ services:
     volumes:
       - ./.mcp-atlassian:/home/app/.mcp-atlassian
     command: ["--transport", "streamable-http", "--port", "3002"]
+    restart: unless-stopped
+
+  conjexture-mcp:
+    build:
+      context: ./mcp-in
+      dockerfile: Dockerfile
+    image: conjexture-mcp:latest
+    container_name: conjexture-mcp
+    ports:
+      - "8300:8300"
+    environment:
+      - LETTA_URL=http://letta:8283
+      - LETTA_PASSWORD=${LETTA_SERVER_PASSWORD}
+      - MCP_HOST=0.0.0.0
+      - MCP_PORT=8300
+      - DISABLE_DNS_REBINDING_PROTECTION=${DISABLE_DNS_REBINDING_PROTECTION:-false}
+    depends_on:
+      letta:
+        condition: service_healthy
     restart: unless-stopped
 
 

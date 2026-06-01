@@ -155,7 +155,7 @@ This will:
 3. Select **Self-Hosted servers**, then **Connect to a server**.
 4. In **Server URL**, enter your local letta url (default: `http://localhost:8283`), and Password if set. Then click **Confirm**.
 5. Your local server should appear on the Self-Hosted servers list. Select it to enter its management panel.
-6. Select **View agents** or **agents** menu item. The registered agents **user-support** and **investigator** should appear.
+6. Select **View agents** or **agents** menu item. The registered agents **user-support**, **investigator**, and **mcp-investigator** should appear.
 7. Select **Open in ADE** of the **user-support** agent to start chatting.
 
 ---

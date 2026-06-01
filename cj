@@ -120,6 +120,11 @@ cmd_init() {
   _check_env
   _log_llm_config
 
+  # Ensure mem0 history db host file exists (Docker file bind mounts require it)
+  local mem0_db_path="${MEM0_HISTORY_DB_PATH:-./backups/mem0-history/history.db}"
+  mkdir -p "$(dirname "$mem0_db_path")" && touch "$mem0_db_path"
+  log "Ensured mem0 history db exists at $mem0_db_path"
+
   log "Pulling Docker images..."
   _docker_compose "$profiles" pull --ignore-buildable
 
@@ -144,6 +149,12 @@ cmd_up() {
   header "Starting Conjexture"
   _check_env
   _log_llm_config
+
+  # Ensure mem0 history db host file exists (Docker file bind mounts require it)
+  local mem0_db_path="${MEM0_HISTORY_DB_PATH:-./backups/mem0-history/history.db}"
+  mkdir -p "$(dirname "$mem0_db_path")" && touch "$mem0_db_path"
+  log "Ensured mem0 history db exists at $mem0_db_path"
+
   _docker_compose "$profiles" up -d
   log "Services started. Letta ADE at http://localhost:8283"
 }

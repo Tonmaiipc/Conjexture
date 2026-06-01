@@ -43,6 +43,7 @@ services:
       - SLACK_MCP_XOXP_TOKEN=${SLACK_MCP_XOXP_TOKEN}
     volumes:
       - letta-data:/root/.letta
+      - ${MEM0_HISTORY_DB_PATH:-./backups/mem0-history/history.db}:/root/.mem0/history.db
     depends_on:
       letta-db:
         condition: service_healthy

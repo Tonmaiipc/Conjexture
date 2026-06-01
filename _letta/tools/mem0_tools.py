@@ -40,12 +40,7 @@ def mem0_search_memory(query: str) -> str:
                 "collection_name": os.environ["QDRANT_COLLECTION"],
             }
         },
-        "history_store": {
-            "provider": "postgresql",
-            "config": {
-                "url": os.environ["MEM0_DB_URI"]
-            }
-        }
+        "history_db_path": "/root/.mem0/history.db",
     }
     org_id = os.environ["MEM0_ORG_ID"]
     m = Memory.from_config(config)
@@ -151,13 +146,8 @@ Return a JSON object with a facts array.
                 "collection_name": os.environ["QDRANT_COLLECTION"],
             }
         },
+        "history_db_path": "/root/.mem0/history.db",
         "custom_fact_extraction_prompt": custom_fact_extraction_prompt,
-        "history_store": {
-            "provider": "postgresql",
-            "config": {
-                "url": os.environ["MEM0_DB_URI"]
-            }
-        }
     }
 
     org_id = os.environ["MEM0_ORG_ID"]

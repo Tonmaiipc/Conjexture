@@ -17,7 +17,6 @@
     "conversations_replies",
     "channels_list",
     "users_search",
-    "slack_list_channels",
     "jira_search",
     "jira_get_issue",
     "jira_get_project_issues",

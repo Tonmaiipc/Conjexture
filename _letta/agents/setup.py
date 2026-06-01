@@ -99,6 +99,7 @@ def register_new_agents(tool_map: dict) -> AgentSetupResult:
     payloads = {p.name: p for p in build_agent_payloads(tool_map)}
 
     investigator = create_agent(payloads["investigator"])
+    mcp_investigator = create_agent(payloads["mcp-investigator"])
     
     user_support_payload = inject_investigator_memory_block(
         payloads["user-support"], 
@@ -108,7 +109,8 @@ def register_new_agents(tool_map: dict) -> AgentSetupResult:
 
     return AgentSetupResult(created={
         "investigator": investigator["id"],
-        "user-support": user_support["id"]
+        "user-support": user_support["id"],
+        "mcp-investigator": mcp_investigator["id"]
     })
 
 def update_existing_agents(existing_agents: dict, new_agent_payloads: list[AgentPayload]) -> AgentSetupResult:

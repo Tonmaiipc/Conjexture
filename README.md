@@ -26,7 +26,19 @@ Most org knowledge tools are search-first and stateless — they find informatio
 
 ```
 ┌─────────────────────────────────────────────────────┐
+│         External LLM Clients                         │
+│  (Claude Desktop, Cursor, other MCP hosts)           │
+└─────────────────┬───────────────────────────────────┘
+                  │ conjexture_query / conjexture_retrieve
+┌─────────────────▼───────────────────────────────────┐
+│           conjexture-mcp (port 8300)                 │
+│      FastMCP server — StreamableHTTP                 │
+│      Dispatches to mcp-investigator via Letta API    │
+└─────────────────┬───────────────────────────────────┘
+                  │
+┌─────────────────▼───────────────────────────────────┐
 │                    User / Frontend                   │
+│              (Letta ADE, Slack bot)                  │
 └─────────────────┬───────────────────────────────────┘
                   │
 ┌─────────────────▼───────────────────────────────────┐
@@ -35,19 +47,18 @@ Most org knowledge tools are search-first and stateless — they find informatio
 └─────────────────┬───────────────────────────────────┘
                   │ dispatch_to_investigator
 ┌─────────────────▼───────────────────────────────────┐
-│             Investigator Agent (Letta)               │
+│          Investigator / mcp-investigator (Letta)     │
 │                                                      │
 │  1. Check mem0 (shared org memory)                   │
 │  2. If insufficient → fan out to tools               │
 │  3. Store findings to mem0                           │
-│  4. Return answer to user-support                    │
+│  4. Return answer to caller                          │
 └──┬──────────┬──────────┬──────────┬─────────────────┘
    │          │          │          │
    ▼          ▼          ▼          ▼
  mem0       Slack      Jira/      Web
 (Qdrant)   (MCP)    Confluence  (SearXNG)
                       (MCP)
-```
 
 Next query on same topic → mem0 hit → investigation skipped
 
@@ -75,7 +86,8 @@ The closed loop is the core value: every investigation makes the next one faster
 | Agent | Role | Model |
 |-------|------|-------|
 | `user-support` | User-facing, receives queries, dispatches to investigator, presents answers | DeepSeek V4 Flash |
-| `investigator` | Checks mem0, fans out to tools, stores findings, returns results | DeepSeek V4 Flash |
+| `investigator` | Checks mem0, fans out to tools, stores findings, returns results to user-support | DeepSeek V4 Flash |
+| `mcp-investigator` | Same capacity as `investigator` but responds directly in-conversation; used by the `conjexture-mcp` server for two-phase querying (mem0-only fast path + background full investigation) | DeepSeek V4 Flash |
 
 
 ## Stack
@@ -89,6 +101,7 @@ The closed loop is the core value: every investigation makes the next one faster
 | [SearXNG](https://github.com/searxng/searxng) | Self-hosted web search |
 | [korotovsky/slack-mcp-server](https://github.com/korotovsky/slack-mcp-server) | Slack MCP server |
 | [sooperset/mcp-atlassian](https://github.com/sooperset/mcp-atlassian) | Jira + Confluence MCP server |
+| conjexture-mcp (mcp-in/) | FastMCP server exposing `conjexture_query` and `conjexture_retrieve` tools over StreamableHTTP (port 8300); dispatches to mcp-investigator via the Letta API |
 
 
 ## Prerequisites
@@ -280,6 +293,56 @@ For remote server deployment, run `./go jira-oauth` locally and copy `.mcp-atlas
 
 ---
 
+## External Client Access (Claude Desktop, Cursor, etc.)
+
+The `conjexture-mcp` server exposes two MCP tools on port 8300 by default:
+
+- **`conjexture_query(question, topic_id?)`** — Checks mem0 (fast, <1s), returns preliminary result + topic_id. Simultaneously dispatches a full background investigation.
+- **`conjexture_retrieve(investigation_subject, topic_id)`** — Poll the background investigation results using the topic_id from conjexture_query.
+
+### Option A — Direct Docker Connection (no network exposure)
+
+Claude Desktop can connect directly to the container over Docker networking:
+
+```json
+{
+  "mcpServers": {
+    "conjexture": {
+      "command": "docker",
+      "args": ["exec", "-i", "conjexture-mcp", "python", "main.py", "stdio"]
+    }
+  }
+}
+```
+
+This runs the server in stdio mode, so Claude Desktop talks to it via `docker exec`. Requires the `conjexture-mcp` container to be running.
+
+### Option B — Non-Local Network Server
+
+If Claude Desktop is running on a different machine (or you want to expose the service):
+
+1. Ensure port 8300 or your custom port is accessible from the client machine (network routing, firewall, or a tunnel like ngrok)
+2. Configure Claude Desktop:
+
+```json
+{
+  "mcpServers": {
+    "conjexture": {
+      "type": "url",
+      "url": "http://<host>:8300/mcp"
+    }
+  }
+}
+```
+
+Replace `<host>` with the Docker host IP or tunnel URL. The server speaks StreamableHTTP natively — no supergateway or additional bridge needed.
+
+### Cursor and Other Clients
+
+Any MCP host that supports StreamableHTTP (or can wrap stdio via `docker exec`) can use conjexture-mcp. Point it to port 8300 with the `/mcp` path, or use the direct docker pattern above.
+
+---
+
 ## Production Deployment
 
 Production deployment is out of scope for this guide. At a high level:
@@ -305,9 +368,9 @@ Production deployment is out of scope for this guide. At a high level:
 - [x] Agent reliability testing — 10 query pair test suite
 - [x] mem0 write quality audit — manually inspect what's stored
 - [x] mem0 hit rate instrumentation
+- [x] Conjexture exposed as an MCP tool for Claude Desktop, Cursor, and other LLM clients
 
 **Next**
-- [ ] Conjexture exposed as an MCP tool for Claude Desktop, Cursor, and other LLM clients
 - [ ] Stale memory handling — contradictory memories strategy
 - [ ] Source provenance on mem0 writes — source, timestamp, captured_by
 - [ ] Document Slack token scope — public channels only

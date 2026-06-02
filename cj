@@ -108,7 +108,8 @@ cmd_build() {
   header "Building Conjexture images"
   require docker
   docker build -f Dockerfile.letta -t conjexture-letta:latest .
-  log "Done. Run ./cj init' or './cj up' to start."
+  docker compose -f "$COMPOSE_FILE" build conjexture-mcp
+  log "Done. Run './cj init' or './cj up' to start."
 }
 
 cmd_init() {

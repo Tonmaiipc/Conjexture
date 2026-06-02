@@ -171,6 +171,7 @@ services:
       - MCP_HOST=0.0.0.0
       - MCP_PORT=8300
       - DISABLE_DNS_REBINDING_PROTECTION=${DISABLE_DNS_REBINDING_PROTECTION:-false}
+      - MCP_CLIENT_TIMEOUT=${MCP_CLIENT_TIMEOUT:-180}
     depends_on:
       letta:
         condition: service_healthy

@@ -12,6 +12,7 @@ LETTA_URL = os.getenv("LETTA_URL", "http://letta:8283")
 LETTA_PASSWORD = os.getenv("LETTA_PASSWORD", "")
 MCP_HOST = os.getenv("MCP_HOST", "0.0.0.0")
 MCP_PORT = int(os.getenv("MCP_PORT", "8300"))
+MCP_CLIENT_TIMEOUT = int(os.getenv("MCP_CLIENT_TIMEOUT", "180"))
 AGENT_NAME = "mcp-investigator"
 
 from mcp.server.transport_security import TransportSecuritySettings
@@ -24,7 +25,14 @@ transport_security = TransportSecuritySettings(
 )
 
 mcp = FastMCP("conjexture", transport_security=transport_security)
-client = httpx.Client(timeout=60, follow_redirects=True)
+
+
+def _get_client(timeout=60):
+    """Create an httpx client with shared base config."""
+    return httpx.Client(timeout=timeout, follow_redirects=True)
+
+
+client = _get_client(MCP_CLIENT_TIMEOUT)
 
 def get_headers():
     headers = {"Content-Type": "application/json"}
@@ -150,7 +158,7 @@ def conjexture_query(question: str, topic_id: str | None = None) -> str:
     print(f"Phase 1 completed, string phase2, full investigation.", file=sys.stderr)
 
     # Phase 2: dispatch full investigation — returns immediately
-    with httpx.Client(timeout=5) as fire_client:
+    with _get_client(5) as fire_client:
         try:
             fire_result = fire_client.post(
                 f"{LETTA_URL}/v1/conversations/{conversation_id}/messages",

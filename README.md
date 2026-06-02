@@ -59,6 +59,7 @@ Most org knowledge tools are search-first and stateless — they find informatio
  mem0       Slack      Jira/      Web
 (Qdrant)   (MCP)    Confluence  (SearXNG)
                       (MCP)
+```
 
 Next query on same topic → mem0 hit → investigation skipped
 

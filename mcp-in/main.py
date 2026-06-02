@@ -41,6 +41,22 @@ def get_headers():
     return headers
 
 
+def _error(content, topic_id=None, error_details=None):
+    d = {"status": "error", "content": content}
+    if topic_id is not None:
+        d["topic_id"] = topic_id
+    if error_details is not None:
+        d["error_details"] = error_details
+    return json.dumps(d)
+
+
+def _success(content, topic_id=None):
+    d = {"status": "success", "content": content}
+    if topic_id is not None:
+        d["topic_id"] = topic_id
+    return json.dumps(d)
+
+
 def find_agent() -> str | None:
     """Find the mcp-investigator agent by name."""
     try:
@@ -90,11 +106,7 @@ def conjexture_query(question: str, topic_id: str | None = None) -> str:
 
     agent_id = find_agent()
     if not agent_id:
-        return json.dumps({
-            "status": "error",
-            "content": "mcp-investigator agent not found. This is a server side error.",
-            "topic_id": None,
-        })
+        return _error("mcp-investigator agent not found. This is a server side error.")
 
     # Create a fresh conversation for this investigation
     if not conversation_id:
@@ -106,20 +118,16 @@ def conjexture_query(question: str, topic_id: str | None = None) -> str:
                 json={"summary": question[:100]},
             )
             if r.status_code != 200:
-                return json.dumps({
-                    "status": "error",
-                    "content": f"Failed to create conversation. This is a server side error.",
-                    "error_details": r.text,
-                    "topic_id": None,
-                })
+                return _error(
+                    "Failed to create conversation. This is a server side error.",
+                    error_details=r.text,
+                )
             conversation_id = r.json()["id"]
         except Exception as e:
-            return json.dumps({
-                "status": "error",
-                "content": f"Failed to create conversation. This is a server side error.",
-                "error_details": str(e),
-                "topic_id": None,
-            })
+            return _error(
+                "Failed to create conversation. This is a server side error.",
+                error_details=str(e),
+            )
 
     # Phase 1: mem0 check — sync
     print(f"Starting phase 1, prelim mem0.", file=sys.stderr)
@@ -137,24 +145,18 @@ def conjexture_query(question: str, topic_id: str | None = None) -> str:
         if r.status_code == 200:
             messages = parse_sse_messages(r.text)
             result = extract_assistant_message(messages)
-            result = {
-                "status": "success",
-                "content": "Preliminary result: " + result if result else f"No preliminary information found. Continue researching in background. Please check back using the topic ID: {conversation_id}",
-                "topic_id": conversation_id,
-            }
+            result = _success(
+                "Preliminary result: " + result if result else f"No preliminary information found. Continue researching in background. Please check back using the topic ID: {conversation_id}",
+                topic_id=conversation_id,
+            )
         else:
-            result = {
-                "status": "error",
-                "content": f"Letta API error: {r.status_code}",
-                "error_details": r.text,
-                "topic_id": conversation_id,
-            }
+            result = _error(
+                f"Letta API error: {r.status_code}",
+                topic_id=conversation_id,
+                error_details=r.text,
+            )
     except Exception as e:
-        return json.dumps({
-            "status": "error",
-            "content": f"Failed to reach investigator: {e}",
-            "topic_id": conversation_id,
-        })
+        return _error(f"Failed to reach investigator: {e}", topic_id=conversation_id)
     print(f"Phase 1 completed, string phase2, full investigation.", file=sys.stderr)
 
     # Phase 2: dispatch full investigation — returns immediately
@@ -191,7 +193,7 @@ def conjexture_retrieve(investigation_subject: str, topic_id: str) -> str:
     conversation_id = topic_id
 
     if not conversation_id:
-        return json.dumps({"status": "error", "content": "No topic ID provided."})
+        return _error("No topic ID provided.")
 
     try:
         r = client.post(
@@ -205,35 +207,25 @@ def conjexture_retrieve(investigation_subject: str, topic_id: str) -> str:
             },
         )
         if r.status_code != 200:
-            return json.dumps({
-                "status": "error",
-                "content": f"Failed to connect to the conversation. This is a server side error.",
-                "error_details": r.text,
-                "topic_id": conversation_id,
-            })
+            return _error(
+                "Failed to connect to the conversation. This is a server side error.",
+                topic_id=conversation_id,
+                error_details=r.text,
+            )
 
         messages = parse_sse_messages(r.text)
 
         result = extract_assistant_message(messages)
         if result:
-            return json.dumps({
-                "status": "success",
-                "content": result,
-                "topic_id": conversation_id,
-            })
+            return _success(result, topic_id=conversation_id)
         else:
-            return json.dumps({
-                "status": "success",
-                "content": "Investigation is still in progress. Check again later.",
-                "topic_id": conversation_id,
-            })
+            return _success(
+                "Investigation is still in progress. Check again later.",
+                topic_id=conversation_id,
+            )
 
     except Exception as e:
-        return json.dumps({
-            "status": "error", 
-            "content": f"Failed to check investigation: {e}", 
-            "topic_id": conversation_id}
-        )
+        return _error(f"Failed to check investigation: {e}", topic_id=conversation_id)
 
 
 def wait_for_letta(max_retries=30, delay=2):

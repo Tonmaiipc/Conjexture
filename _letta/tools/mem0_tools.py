@@ -1,18 +1,6 @@
 from typing import Optional
 
 
-_qdrant_client = None
-def _get_qdrant():
-    global _qdrant_client
-    if _qdrant_client is None:
-        from qdrant_client import QdrantClient
-        import os
-        _qdrant_client = QdrantClient(
-            host=os.environ["QDRANT_HOST"],
-            port=int(os.environ["QDRANT_PORT"]),
-        )
-    return _qdrant_client
-
 def mem0_search_memory(query: str) -> str:
     """
     Search org knowledge memory for information relevant to the query.
@@ -85,8 +73,12 @@ def mem0_search_memory(query: str) -> str:
         
         # Update hit count and last hit timestamp in metadata
         try:
+            from qdrant_client import QdrantClient
+            q = QdrantClient(
+                host=os.environ["QDRANT_HOST"],
+                port=int(os.environ["QDRANT_PORT"]),
+            )
             collection = os.environ["QDRANT_COLLECTION"]
-            q = _get_qdrant()
             existing = record.get("metadata") or {}
             q.set_payload(
                 collection_name=collection,

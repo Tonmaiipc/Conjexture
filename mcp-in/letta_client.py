@@ -38,6 +38,13 @@ def _error(content, topic_id=None, error_details=None):
     return json.dumps(d)
 
 
+def _debug(content, topic_id=None):
+    d = {"status": "debug", "content": content}
+    if topic_id is not None:
+        d["topic_id"] = topic_id
+    return json.dumps(d)
+
+
 def _success(content, topic_id=None):
     d = {"status": "success", "content": content}
     if topic_id is not None:

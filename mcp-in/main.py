@@ -1,9 +1,12 @@
 """
 Conjexture MCP Server — inbound: external LLM clients → Conjexture investigator.
 """
+import logging
 import sys
 from mcp.server.fastmcp import FastMCP
 from mcp.server.transport_security import TransportSecuritySettings
+
+logger = logging.getLogger("conjexture-mcp")
 
 from letta_client import (
     _get_client,
@@ -53,34 +56,45 @@ def _send_message(conversation_id: str, text: str, background: bool = False) -> 
     return r.status_code, r.text
 
 
-def _query_mem0(conversation_id: str, question: str) -> str:
-    """Send a mem0-only query to the investigator for a fast preliminary answer."""
-    print("Starting phase 1, prelim mem0.", file=sys.stderr)
+def _create_letta_conversation(agent_id: str, question: str) -> str | None:
+    """Create a new Letta conversation. Returns conversation_id or None (logs details)."""
     try:
-        status, text = _send_message(conversation_id, f"Mode: mem0_only\n\n{question}")
-        if status == 200:
-            messages = parse_sse_messages(text)
-            result = extract_assistant_message(messages)
-            return _success(
-                "Preliminary result: " + result if result else f"No preliminary information found. Continue researching in background. Please check back using the topic ID: {conversation_id}",
-                topic_id=conversation_id,
-            )
-        else:
-            return _error(
-                f"Letta API error: {status}",
-                topic_id=conversation_id,
-                error_details=text,
-            )
+        r = client.post(
+            f"{LETTA_URL}/v1/conversations/",
+            params={"agent_id": agent_id},
+            headers=get_headers(),
+            json={"summary": question[:100]},
+        )
+        if r.status_code != 200:
+            logger.error("Failed to create conversation. Status=%s body=%s", r.status_code, r.text)
+            return None
+        return r.json()["id"]
     except Exception as e:
-        return _error(f"Failed to reach investigator: {e}", topic_id=conversation_id)
+        logger.error("Failed to create conversation: %s", e)
+        return None
 
 
-def _dispatch_background(conversation_id: str, research_thoroughly: bool) -> None:
+def _quick_search(conversation_id: str, question: str) -> str | None:
+    """Check conversation history and mem0 for a fast answer. Returns response text or None."""
+    logger.info("Quick search (conversation history + mem0)")
+    try:
+        status, text = _send_message(conversation_id, f"Mode: quick_search\n\n{question}")
+        if status != 200:
+            logger.error("Letta API error %s: %s", status, text)
+            return None
+        messages = parse_sse_messages(text)
+        return extract_assistant_message(messages)
+    except Exception as e:
+        logger.error("Failed to reach investigator: %s", e)
+        return None
+
+
+def _dispatch_background(conversation_id: str, question: str, research_thoroughly: bool) -> None:
     """Fire-and-forget a full background investigation. Never raises."""
     if research_thoroughly:
-        msg = "The user requested thorough research. Investigate fully regardless of cached results."
+        msg = f"The user requested thorough research.\n\n{question}"
     else:
-        msg = "Review the Phase 1 result. If mem0 already fully answered the question, skip investigation and respond directly. Otherwise, investigate further using available tools."
+        msg = question
 
     with _get_client(5) as fire_client:
         try:
@@ -88,7 +102,7 @@ def _dispatch_background(conversation_id: str, research_thoroughly: bool) -> Non
                 "messages": [{
                     "type": "message",
                     "role": "user",
-                    "content": [{"type": "text", "text": f"Mode: full_investigation\n\n{msg}"}],
+                    "content": [{"type": "text", "text": f"Mode: investigation\n\n{msg}"}],
                 }],
                 "background": True,
                 "streaming": True,
@@ -98,26 +112,21 @@ def _dispatch_background(conversation_id: str, research_thoroughly: bool) -> Non
                 headers={**get_headers(), "Accept": "text/event-stream"},
                 json=body,
             )
-            print(f"Dispatched full investigation. Status: {r.status_code}", file=sys.stderr, flush=True)
+            logger.info("Dispatched full investigation (status=%s)", r.status_code)
         except Exception as e:
-            print(f"Phase 2 error: {e}", file=sys.stderr, flush=True)
+            logger.error("Background dispatch failed: %s", e)
 
 
 @mcp.tool()
 def conjexture_query(question: str, topic_id: str | None = None, research_thoroughly: bool = False) -> str:
     """Query Conjexture's org knowledge.
 
-    Responds in two phases:
-    1. Preliminary answer (fast): searches mem0 and conversation history
-       for existing knowledge. Returns immediately.
-    2. Full investigation (background): dispatched automatically. The
-       investigator decides whether deeper research is needed based on
-       the preliminary result — if mem0 already fully answered the
-       question, it may skip investigation unless research_thoroughly
-       is set.
+    Searches conversation history and mem0 for a fast preliminary answer,
+    then dispatches a full background investigation if deeper research is
+    needed. The investigator decides whether to investigate further based
+    on the preliminary result.
 
-    Use the returned topic_id to continue this conversation later with
-    follow-up questions.
+    Use the returned topic_id to follow up with the same conversation later.
 
     Args:
         question: The question to research.
@@ -134,32 +143,29 @@ def conjexture_query(question: str, topic_id: str | None = None, research_thorou
 
     # Start a new topic if no topic_id provided
     if not conversation_id:
-        try:
-            r = client.post(
-                f"{LETTA_URL}/v1/conversations/",
-                params={"agent_id": agent_id},
-                headers=get_headers(),
-                json={"summary": question[:100]},
-            )
-            if r.status_code != 200:
-                return _error(
-                    "Failed to create conversation. This is a server side error.",
-                    error_details=r.text,
-                )
-            conversation_id = r.json()["id"]
-        except Exception as e:
-            return _error(
-                "Failed to create conversation. This is a server side error.",
-                error_details=str(e),
-            )
+        conversation_id = _create_letta_conversation(agent_id, question)
+        if not conversation_id:
+            return _error("Failed to create conversation. This is a server side error.")
 
-    result = _query_mem0(conversation_id, question)
-    _dispatch_background(conversation_id, research_thoroughly)
-    return result
+    # Quick search: check conversation history + mem0
+    result = _quick_search(conversation_id, question)
+    if result:
+        content = f"Preliminary result: {result}"
+    else:
+        content = f"No preliminary information found. Continue researching in background. Please check back using the topic ID: {conversation_id}"
+
+    _dispatch_background(conversation_id, question, research_thoroughly)
+    return _success(content, topic_id=conversation_id)
 
 
 if __name__ == "__main__":
     import os
+
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s [%(name)s] %(levelname)s: %(message)s",
+        stream=sys.stderr,
+    )
 
     wait_for_letta()
 

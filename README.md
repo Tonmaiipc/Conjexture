@@ -29,7 +29,7 @@ Most org knowledge tools are search-first and stateless — they find informatio
 │         External LLM Clients                         │
 │  (Claude Desktop, Cursor, other MCP hosts)           │
 └─────────────────┬───────────────────────────────────┘
-                  │ conjexture_query / conjexture_retrieve
+                  │ conjexture_query(question, topic_id?)
 ┌─────────────────▼───────────────────────────────────┐
 │           conjexture-mcp (port 8300)                 │
 │      FastMCP server — StreamableHTTP                 │
@@ -102,7 +102,7 @@ The closed loop is the core value: every investigation makes the next one faster
 | [SearXNG](https://github.com/searxng/searxng) | Self-hosted web search |
 | [korotovsky/slack-mcp-server](https://github.com/korotovsky/slack-mcp-server) | Slack MCP server |
 | [sooperset/mcp-atlassian](https://github.com/sooperset/mcp-atlassian) | Jira + Confluence MCP server |
-| conjexture-mcp (mcp-in/) | FastMCP server exposing `conjexture_query` and `conjexture_retrieve` tools over StreamableHTTP (port 8300); dispatches to mcp-investigator via the Letta API |
+|| conjexture-mcp (mcp-in/) | FastMCP server exposing `conjexture_query(question, topic_id?)` tool over StreamableHTTP (port 8300); dispatches to mcp-investigator via the Letta API |
 
 
 ## Prerequisites
@@ -296,10 +296,11 @@ For remote server deployment, run `./go jira-oauth` locally and copy `.mcp-atlas
 
 ## External Client Access (Claude Desktop, Cursor, etc.)
 
-The `conjexture-mcp` server exposes two MCP tools on port 8300 by default:
+The `conjexture-mcp` server exposes a single MCP tool on port 8300 by default:
 
-- **`conjexture_query(question, topic_id?)`** — Checks mem0 (fast, <1s), returns preliminary result + topic_id. Simultaneously dispatches a full background investigation.
-- **`conjexture_retrieve(investigation_subject, topic_id)`** — Poll the background investigation results using the topic_id from conjexture_query.
+- **`conjexture_query(question, topic_id?)`** — Query Conjexture's org knowledge.
+  - **Start a new topic** (omit `topic_id`): Creates a fresh investigation, returns a fast preliminary answer from mem0, and dispatches a full background research.
+  - **Continue a topic** (provide `topic_id`): Continues an existing investigation by asking a follow-up question in the same conversation context. Uses mem0 + conversation history for a fast answer, then dispatches more background research if needed.
 
 ### Option A — Direct Docker Connection (no network exposure)
 

@@ -2,23 +2,25 @@
 Conjexture MCP Server — inbound: external LLM clients → Conjexture investigator.
 """
 import sys
-import json
-import os
-import time
-import httpx
 from mcp.server.fastmcp import FastMCP
-
-LETTA_URL = os.getenv("LETTA_URL", "http://letta:8283")
-LETTA_PASSWORD = os.getenv("LETTA_PASSWORD", "")
-MCP_HOST = os.getenv("MCP_HOST", "0.0.0.0")
-MCP_PORT = int(os.getenv("MCP_PORT", "8300"))
-MCP_CLIENT_TIMEOUT = int(os.getenv("MCP_CLIENT_TIMEOUT", "180"))
-AGENT_NAME = "mcp-investigator"
-
 from mcp.server.transport_security import TransportSecuritySettings
+
+from letta_client import (
+    _get_client,
+    _error,
+    _success,
+    client,
+    find_agent,
+    get_headers,
+    parse_sse_messages,
+    extract_assistant_message,
+    wait_for_letta,
+    LETTA_URL,
+)
 
 # DNS rebinding protection is enabled by default (production).
 # Set DISABLE_DNS_REBINDING_PROTECTION=true to disable for testing behind proxies (ngrok, etc.).
+import os
 disable = os.getenv("DISABLE_DNS_REBINDING_PROTECTION", "").lower() in ("true", "1")
 transport_security = TransportSecuritySettings(
     enable_dns_rebinding_protection=not disable
@@ -27,88 +29,110 @@ transport_security = TransportSecuritySettings(
 mcp = FastMCP("conjexture", transport_security=transport_security)
 
 
-def _get_client(timeout=60):
-    """Create an httpx client with shared base config."""
-    return httpx.Client(timeout=timeout, follow_redirects=True)
+def _send_message(conversation_id: str, text: str, background: bool = False) -> tuple[int, str]:
+    """Send a message to a Letta conversation. Returns (status_code, response_text)."""
+    body = {
+        "messages": [{
+            "role": "user",
+            "content": [{"type": "text", "text": text}],
+        }],
+    }
+    if background:
+        body["background"] = True
+        body["streaming"] = True
+
+    headers = get_headers()
+    if background:
+        headers = {**headers, "Accept": "text/event-stream"}
+
+    r = client.post(
+        f"{LETTA_URL}/v1/conversations/{conversation_id}/messages",
+        headers=headers,
+        json=body,
+    )
+    return r.status_code, r.text
 
 
-client = _get_client(MCP_CLIENT_TIMEOUT)
-
-def get_headers():
-    headers = {"Content-Type": "application/json"}
-    if LETTA_PASSWORD:
-        headers["Authorization"] = f"Bearer {LETTA_PASSWORD}"
-    return headers
-
-
-def _error(content, topic_id=None, error_details=None):
-    d = {"status": "error", "content": content}
-    if topic_id is not None:
-        d["topic_id"] = topic_id
-    if error_details is not None:
-        d["error_details"] = error_details
-    return json.dumps(d)
-
-
-def _success(content, topic_id=None):
-    d = {"status": "success", "content": content}
-    if topic_id is not None:
-        d["topic_id"] = topic_id
-    return json.dumps(d)
-
-
-def find_agent() -> str | None:
-    """Find the mcp-investigator agent by name."""
+def _query_mem0(conversation_id: str, question: str) -> str:
+    """Send a mem0-only query to the investigator for a fast preliminary answer."""
+    print("Starting phase 1, prelim mem0.", file=sys.stderr)
     try:
-        r = client.get(f"{LETTA_URL}/v1/agents", headers=get_headers())
-        if r.status_code != 200:
-            return None
-        agents = r.json()
-        for agent in agents:
-            if agent.get("name") == AGENT_NAME:
-                return agent["id"]
-    except Exception:
-        pass
-    return None
+        status, text = _send_message(conversation_id, f"Mode: mem0_only\n\n{question}")
+        if status == 200:
+            messages = parse_sse_messages(text)
+            result = extract_assistant_message(messages)
+            return _success(
+                "Preliminary result: " + result if result else f"No preliminary information found. Continue researching in background. Please check back using the topic ID: {conversation_id}",
+                topic_id=conversation_id,
+            )
+        else:
+            return _error(
+                f"Letta API error: {status}",
+                topic_id=conversation_id,
+                error_details=text,
+            )
+    except Exception as e:
+        return _error(f"Failed to reach investigator: {e}", topic_id=conversation_id)
 
-def parse_sse_messages(text: str) -> list:
-    messages = []
-    for line in text.splitlines():
-        if line.startswith("data: "):
-            try:
-                messages.append(json.loads(line[6:]))
-            except json.JSONDecodeError:
-                pass
-    return messages
 
-def extract_assistant_message(messages: list) -> str | None:
-    for msg in reversed(messages):
-        if msg.get("message_type") == "assistant_message":
-            content = msg.get("content", "")
-            if isinstance(content, list):
-                return " ".join(block.get("text", "") for block in content if block.get("type") == "text")
-            elif isinstance(content, str):
-                return content
-    return None
+def _dispatch_background(conversation_id: str, research_thoroughly: bool) -> None:
+    """Fire-and-forget a full background investigation. Never raises."""
+    if research_thoroughly:
+        msg = "The user requested thorough research. Investigate fully regardless of cached results."
+    else:
+        msg = "Review the Phase 1 result. If mem0 already fully answered the question, skip investigation and respond directly. Otherwise, investigate further using available tools."
+
+    with _get_client(5) as fire_client:
+        try:
+            body = {
+                "messages": [{
+                    "type": "message",
+                    "role": "user",
+                    "content": [{"type": "text", "text": f"Mode: full_investigation\n\n{msg}"}],
+                }],
+                "background": True,
+                "streaming": True,
+            }
+            r = fire_client.post(
+                f"{LETTA_URL}/v1/conversations/{conversation_id}/messages",
+                headers={**get_headers(), "Accept": "text/event-stream"},
+                json=body,
+            )
+            print(f"Dispatched full investigation. Status: {r.status_code}", file=sys.stderr, flush=True)
+        except Exception as e:
+            print(f"Phase 2 error: {e}", file=sys.stderr, flush=True)
 
 
 @mcp.tool()
-def conjexture_query(question: str, topic_id: str | None = None) -> str:
-    """Query Conjexture's org knowledge. Returns cached answer immediately
-    if available, and starts a full background investigation for fresh results.
-    Use conjexture_retrieve to retrieve the full investigation results later.
+def conjexture_query(question: str, topic_id: str | None = None, research_thoroughly: bool = False) -> str:
+    """Query Conjexture's org knowledge.
+
+    Responds in two phases:
+    1. Preliminary answer (fast): searches mem0 and conversation history
+       for existing knowledge. Returns immediately.
+    2. Full investigation (background): dispatched automatically. The
+       investigator decides whether deeper research is needed based on
+       the preliminary result — if mem0 already fully answered the
+       question, it may skip investigation unless research_thoroughly
+       is set.
+
+    Use the returned topic_id to continue this conversation later with
+    follow-up questions.
 
     Args:
         question: The question to research.
-        topic_id: The ID of the topic to continue research.
+        topic_id: Omit to start a new topic. Provide a topic_id from a
+                  previous call to continue that conversation.
+        research_thoroughly: Set to True to force a deep investigation
+                             even if a cached answer exists in mem0.
     """
-    conversation_id = topic_id
-
     agent_id = find_agent()
     if not agent_id:
         return _error("mcp-investigator agent not found. This is a server side error.")
 
-    # Create a fresh conversation for this investigation
+    conversation_id = topic_id
+
+    # Start a new topic if no topic_id provided
     if not conversation_id:
         try:
             r = client.post(
@@ -129,128 +153,23 @@ def conjexture_query(question: str, topic_id: str | None = None) -> str:
                 error_details=str(e),
             )
 
-    # Phase 1: mem0 check — sync
-    print(f"Starting phase 1, prelim mem0.", file=sys.stderr)
-    try:
-        r = client.post(
-            f"{LETTA_URL}/v1/conversations/{conversation_id}/messages",
-            headers=get_headers(),
-            json={
-                "messages": [{
-                    "role": "user",
-                    "content": [{"type": "text", "text": f"Mode: mem0_only\n\n{question}"}],
-                }],
-            },
-        )
-        if r.status_code == 200:
-            messages = parse_sse_messages(r.text)
-            result = extract_assistant_message(messages)
-            result = _success(
-                "Preliminary result: " + result if result else f"No preliminary information found. Continue researching in background. Please check back using the topic ID: {conversation_id}",
-                topic_id=conversation_id,
-            )
-        else:
-            result = _error(
-                f"Letta API error: {r.status_code}",
-                topic_id=conversation_id,
-                error_details=r.text,
-            )
-    except Exception as e:
-        return _error(f"Failed to reach investigator: {e}", topic_id=conversation_id)
-    print(f"Phase 1 completed, string phase2, full investigation.", file=sys.stderr)
-
-    # Phase 2: dispatch full investigation — returns immediately
-    with _get_client(5) as fire_client:
-        try:
-            fire_result = fire_client.post(
-                f"{LETTA_URL}/v1/conversations/{conversation_id}/messages",
-                headers={**get_headers(), "Accept": "text/event-stream"},
-                json={
-                    "messages": [{
-                        "type": "message",
-                        "role": "user",
-                        "content": [{"type": "text", "text": "Mode: full_investigation\n\nContinue the investigation beyond mem0."}],
-                    }],
-                    "background": True,
-                    "streaming": True,
-                }
-            )
-            print(f"Dispatched full investigation. Status: {fire_result.status_code}", file=sys.stderr, flush=True)
-        except Exception as e:
-            print(f"Phase 2 error: {e}", file=sys.stderr, flush=True)
-
-    return json.dumps(result)
-
-
-@mcp.tool()
-def conjexture_retrieve(investigation_subject: str, topic_id: str) -> str:
-    """Attempt to retrieve the previously requested investigation.
-
-    Args:
-        investigation_subject: The subject of the investigation you want to retrieve.
-        topic_id: The topic ID returned by conjexture_query.
-    """
-    conversation_id = topic_id
-
-    if not conversation_id:
-        return _error("No topic ID provided.")
-
-    try:
-        r = client.post(
-            f"{LETTA_URL}/v1/conversations/{conversation_id}/messages",
-            headers=get_headers(),
-            json={
-                "messages": [{
-                    "role": "user",
-                    "content": [{"type": "text", "text": f"Mode: info_retrieval\n\n{investigation_subject}"}],
-                }],
-            },
-        )
-        if r.status_code != 200:
-            return _error(
-                "Failed to connect to the conversation. This is a server side error.",
-                topic_id=conversation_id,
-                error_details=r.text,
-            )
-
-        messages = parse_sse_messages(r.text)
-
-        result = extract_assistant_message(messages)
-        if result:
-            return _success(result, topic_id=conversation_id)
-        else:
-            return _success(
-                "Investigation is still in progress. Check again later.",
-                topic_id=conversation_id,
-            )
-
-    except Exception as e:
-        return _error(f"Failed to check investigation: {e}", topic_id=conversation_id)
-
-
-def wait_for_letta(max_retries=30, delay=2):
-    """Wait for Letta API to be ready and find the mcp-investigator agent."""
-    for i in range(max_retries):
-        agent_id = find_agent()
-        if agent_id:
-            return
-        time.sleep(delay)
-    raise RuntimeError(
-        f"Letta API not ready or '{AGENT_NAME}' agent not found "
-        f"after {max_retries * delay}s. "
-        f"Ensure the stack is running and './cj letta-reset-reg' has been run."
-    )
+    result = _query_mem0(conversation_id, question)
+    _dispatch_background(conversation_id, research_thoroughly)
+    return result
 
 
 if __name__ == "__main__":
+    import os
 
     wait_for_letta()
 
-    # Default: run as HTTP SSE server (for Docker HTTP clients, Cursor, etc.)
-    # With "stdio" arg: run as stdio server (for Claude Desktop via docker exec)
+    mcp_host = os.getenv("MCP_HOST", "0.0.0.0")
+    mcp_port = int(os.getenv("MCP_PORT", "8300"))
+
     if len(sys.argv) > 1 and sys.argv[1] == "stdio":
         mcp.run(transport="stdio")
     else:
         import uvicorn
+
         app = mcp.streamable_http_app()
-        uvicorn.run(app, host=MCP_HOST, port=MCP_PORT)
+        uvicorn.run(app, host=mcp_host, port=mcp_port)

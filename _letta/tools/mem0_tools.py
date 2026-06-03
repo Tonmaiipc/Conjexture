@@ -1,5 +1,18 @@
 from typing import Optional
 
+
+_qdrant_client = None
+def _get_qdrant():
+    global _qdrant_client
+    if _qdrant_client is None:
+        from qdrant_client import QdrantClient
+        import os
+        _qdrant_client = QdrantClient(
+            host=os.environ["QDRANT_HOST"],
+            port=int(os.environ["QDRANT_PORT"]),
+        )
+    return _qdrant_client
+
 def mem0_search_memory(query: str) -> str:
     """
     Search org knowledge memory for information relevant to the query.
@@ -12,8 +25,8 @@ def mem0_search_memory(query: str) -> str:
     """
     import os
     from mem0 import Memory
-    from datetime import datetime, timezone     
-    import psycopg2   
+    from datetime import datetime, timezone
+    import psycopg2
 
     config = {
         "llm": {
@@ -72,17 +85,18 @@ def mem0_search_memory(query: str) -> str:
         
         # Update hit count and last hit timestamp in metadata
         try:
-            current_metadata = record.get("metadata") or {}
-            m.update(
-                memory_id=record["id"],
-                data=record["memory"],  # text unchanged
-                metadata={
-                    **current_metadata,
-                    "hit_count": current_metadata.get("hit_count", 0) + 1,
-                    "last_hit": datetime.now(timezone.utc).isoformat()
-                }
+            collection = os.environ["QDRANT_COLLECTION"]
+            q = _get_qdrant()
+            existing = record.get("metadata") or {}
+            q.set_payload(
+                collection_name=collection,
+                payload={
+                    "hit_count": existing.get("hit_count", 0) + 1,
+                    "last_hit": datetime.now(timezone.utc).isoformat(),
+                },
+                points=[record["id"]],
             )
-        except Exception:
+        except Exception as e:
             pass  # never let hit counting break retrieval
 
         source_ts = (record.get("metadata") or {}).get("source_timestamp", "unknown")
@@ -108,6 +122,7 @@ def mem0_write_memory(content: str, source_timestamp: Optional[str] = None) -> s
     """
     import os
     from mem0 import Memory
+    import json
 
     custom_fact_extraction_prompt = """
 Extract factual knowledge relevant to org operations. Focus on:
@@ -152,5 +167,15 @@ Return a JSON object with a facts array.
 
     org_id = os.environ["MEM0_ORG_ID"]
     m = Memory.from_config(config)
-    metadata = {"source_timestamp": source_timestamp} if source_timestamp else {}
+    metadata = {}
+    if source_timestamp is not None:
+        from datetime import datetime
+        try:
+            datetime.fromisoformat(source_timestamp)
+            metadata["source_timestamp"] = source_timestamp
+        except Exception:
+            return json.dumps({
+                "status": "error",
+                "content": f"Invalid source_timestamp format: '{source_timestamp}'. Expected ISO 8601 (e.g. '2026-06-01T14:30:00Z').",
+            })
     return str(m.add(content, user_id=org_id, metadata=metadata))

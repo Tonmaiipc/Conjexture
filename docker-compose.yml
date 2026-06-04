@@ -157,6 +157,18 @@ services:
     command: ["--transport", "streamable-http", "--port", "3002"]
     restart: unless-stopped
 
+  github-mcp:
+    image: ghcr.io/github/github-mcp-server:latest
+    container_name: github-mcp
+    profiles:
+      - github
+    ports:
+      - "3003:8082"
+    environment:
+      - GITHUB_PERSONAL_ACCESS_TOKEN=${GITHUB_PERSONAL_ACCESS_TOKEN}
+    command: ["http", "--port", "8082", "--read-only"]
+    restart: unless-stopped
+
   conjexture-mcp:
     build:
       context: ./mcp-in

@@ -23,5 +23,14 @@ MCP_SERVERS = [
             "mcp_server_type": "streamable_http",
             "server_url": "http://atlassian-mcp:3002/mcp"
         }
+    },
+    {
+        "server_name": "github-mcp",
+        "config": {
+            "mcp_server_type": "streamable_http",
+            "server_url": "http://github-mcp:8082/mcp",
+            "auth_header": "Authorization",
+            "auth_token": f"Bearer {os.getenv('GITHUB_PERSONAL_ACCESS_TOKEN', '')}"
+        }
     }
 ]

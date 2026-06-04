@@ -91,7 +91,8 @@ _parse_profiles() {
       --search) profiles+=("search") ;;
       --slack)  profiles+=("slack") ;;
       --jira)   profiles+=("jira") ;;
-      --all)    profiles+=("search" "slack" "jira") ;;  # add all known profiles here
+      --github) profiles+=("github") ;;
+      --all)    profiles+=("search" "slack" "jira" "github") ;;  # add all known profiles here
     esac
   done
 
@@ -324,7 +325,8 @@ cmd_help() {
   echo "Infrastructure:"
   echo "  build                   Build custom Docker images (run before first init)"
   echo "  init                    First-time setup — create dirs, pull images, start services"
-  echo "  up                      Start all services"
+  echo "  up [--search|--slack|--jira|--github|--all]"
+  echo "                          Start services (optionally with profiles)"
   echo "  down                    Stop all services"
   echo "  restart                 Restart all services"
   echo "  reset                   Stop, delete all volumes, restart fresh (destructive)"

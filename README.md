@@ -102,6 +102,7 @@ The closed loop is the core value: every investigation makes the next one faster
 | [SearXNG](https://github.com/searxng/searxng) | Self-hosted web search |
 | [korotovsky/slack-mcp-server](https://github.com/korotovsky/slack-mcp-server) | Slack MCP server |
 | [sooperset/mcp-atlassian](https://github.com/sooperset/mcp-atlassian) | Jira + Confluence MCP server |
+| [github/github-mcp-server](https://github.com/github/github-mcp-server) | GitHub MCP server (repos, issues, PRs, commits, code) |
 || conjexture-mcp (mcp-in/) | FastMCP server exposing `conjexture_query(question, topic_id?)` tool over StreamableHTTP (port 8300); dispatches to mcp-investigator via the Letta API |
 
 
@@ -248,6 +249,7 @@ Services are grouped into Docker Compose profiles:
 ./ctx up --search     # + SearXNG web search
 ./ctx up --slack      # + Slack MCP server
 ./ctx up --jira       # + Jira/Confluence MCP server
+./ctx up --github     # + GitHub MCP server
 ./ctx up --all        # Everything
 ```
 

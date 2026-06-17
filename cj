@@ -92,7 +92,9 @@ _parse_profiles() {
       --slack)  profiles+=("slack") ;;
       --jira)   profiles+=("jira") ;;
       --github) profiles+=("github") ;;
-      --all)    profiles+=("search" "slack" "jira" "github") ;;  # add all known profiles here
+      --notion) profiles+=("notion") ;;
+      --linear) profiles+=("linear") ;;
+      --all)    profiles+=("search" "slack" "jira" "github" "notion" "linear") ;;  # add all known profiles here
     esac
   done
 
@@ -110,6 +112,7 @@ cmd_build() {
   require docker
   docker build -f Dockerfile.letta -t conjexture-letta:latest .
   docker compose -f "$COMPOSE_FILE" build conjexture-mcp
+  docker build -f Dockerfile.linear-mcp -t conjexture-linear-mcp:latest .
   log "Done. Run './cj init' or './cj up' to start."
 }
 
@@ -325,7 +328,7 @@ cmd_help() {
   echo "Infrastructure:"
   echo "  build                   Build custom Docker images (run before first init)"
   echo "  init                    First-time setup — create dirs, pull images, start services"
-  echo "  up [--search|--slack|--jira|--github|--all]"
+  echo "  up [--search|--slack|--jira|--github|--notion|--linear|--all]"
   echo "                          Start services (optionally with profiles)"
   echo "  down                    Stop all services"
   echo "  restart                 Restart all services"

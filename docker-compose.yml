@@ -169,6 +169,33 @@ services:
     command: ["http", "--port", "8082", "--read-only"]
     restart: unless-stopped
 
+  notion-mcp:
+    image: mcp/notion
+    container_name: notion-mcp
+    profiles:
+      - notion
+    ports:
+      - "3004:3004"
+    environment:
+      - NOTION_TOKEN=${NOTION_TOKEN}
+    command: ["--transport", "http", "--port", "3004", "--auth-token", "${NOTION_MCP_AUTH_TOKEN}"]
+    restart: unless-stopped
+
+  linear-mcp:
+    build:
+      context: .
+      dockerfile: Dockerfile.linear-mcp
+    image: conjexture-linear-mcp:latest
+    container_name: linear-mcp
+    profiles:
+      - linear
+    ports:
+      - "3005:3000"
+    environment:
+      - BEARER_TOKEN=${LINEAR_API_KEY}
+      - AUTH_STRATEGY=bearer
+    restart: unless-stopped
+
   conjexture-mcp:
     build:
       context: ./mcp-in

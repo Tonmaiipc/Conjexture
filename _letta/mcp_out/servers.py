@@ -32,5 +32,23 @@ MCP_SERVERS = [
             "auth_header": "Authorization",
             "auth_token": f"Bearer {os.getenv('GITHUB_PERSONAL_ACCESS_TOKEN', '')}"
         }
+    },
+    {
+        "server_name": "notion-mcp",
+        "config": {
+            "mcp_server_type": "streamable_http",
+            "server_url": "http://notion-mcp:3004/mcp",
+            "auth_header": "Authorization",
+            "auth_token": f"Bearer {os.getenv('NOTION_MCP_AUTH_TOKEN', '')}"
+        }
+    },
+    {
+        "server_name": "linear-mcp",
+        "config": {
+            "mcp_server_type": "streamable_http",
+            "server_url": "http://linear-mcp:3000/mcp",
+            "auth_header": "Authorization",
+            "auth_token": f"Bearer {os.getenv('LINEAR_API_KEY', '')}"
+        }
     }
 ]

@@ -8,6 +8,8 @@ Use your judgment to decide which sources to query based on the question. You ca
 
 - **mem0** (`mem0_search_memory`) - Org memory from previous investigations. Fast, check this for any topic that may have been researched before.
 - **Slack** (`conversations_search_messages`, `conversations_history`, `conversations_replies`) - Internal team discussions, incidents, decisions, announcements. Best for recent events, team decisions, and anything discussed in channels.
+- **Notion** (`post-search`, `retrieve-a-page`, `get-block-children`, `query-data-source`) - Documentation, PRDs, specs, meeting notes, and org knowledge base. Best for structured documentation and long-form content.
+- **Linear** (`workspace_metadata`, `list_issues`, `get_issues`, `list_projects`, `list_cycles`) - Issue tracking, sprint planning, project status, and engineering task management.
 - **Jira** (`jira_search`, `jira_get_issue`, `jira_get_project_issues`) - Project tracking, tickets, sprint status.
 - **Confluence** (`confluence_search`, `confluence_get_page`) - Documentation, runbooks, design docs.
 - **Web search** (`searxng_search`, `fetch_webpage`) - External information, public knowledge, technical docs. Use when the question requires information outside the org.

@@ -43,7 +43,7 @@ Most org knowledge tools are search-first and stateless — they find informatio
 │    (port 8300)       │         │(Letta ADE, Slack bot)│
 └─────────┬────────────┘         └──────────┬───────────┘
           │                                 │
-          └──────────────┬────────────────────┘
+          └──────────────┬──────────────────┘
                          │
               ┌──────────▼───────────┐
               │  User-Support Agent  │

@@ -1,10 +1,17 @@
 # Conjexture
 
-**Org Memory Platform** — a self-hosted, memory-first knowledge consolidation platform for engineering teams.
+**Org Research Platform** — a self-hosted, memory-first knowledge consolidation platform for product development teams.
 
-**Conjexture** connects to your org's tools (Slack, Jira, Confluence, and more), investigates questions on your behalf, and stores findings in a shared memory that grows smarter with every query. The more your team asks, the faster and cheaper subsequent queries become.
+**Conjexture** was built to solve the knowledge gap horizontally across teams and vertically across ranks. Conjexture creates an orchestrating layer that serves centralized agents equiped with research tools on the team level.
 
-> "Your org knowledge compounds. Stop searching, start knowing."
+**Conjexture** connects to the centrally-managed org's tools (Slack, Jira, Confluence, and more), investigates questions, and stores findings in a shared memory that grows smarter with every query. The more your team asks, the faster and cheaper subsequent queries become.
+
+
+What makes this solution unique is a set of considerations and philosophy it has chosen to adopt:
+1. Provisioning – Conjexture be centrally managed as a platform tool. Non-technical users should be able to use without having to do the piping.
+2. Access control – Access to tools and target artifacts can be centrally managed at least on the group / team level.
+3. Token economy – The orchestration layer theorically helps managing the token cost. (1) team level memory cache. Findings are saved to a memory database with source reference and datetime. This theorically should reduce the amount of tool calling. (2) Separation of concern – separate agent layer for calling research tools and reporting finding. A user can limit their use of high-performance model to complex task and dedicate the research tasks to Conjexture.
+4. LLM provider agnostic – states are maintained in the memory. The models of choice can be switched anytime based on performance and pricing without affecting the users downstream.
 
 
 ## Why **Conjexture**?
@@ -53,10 +60,10 @@ Most org knowledge tools are search-first and stateless — they find informatio
 │  2. If insufficient → fan out to tools               │
 │  3. Store findings to mem0                           │
 │  4. Return answer to caller                          │
-└──┬──────────┬──────────┬──────────┬─────────────────┘
-   │          │          │          │
-   ▼          ▼          ▼          ▼
- mem0       Slack      Jira/      Web
+└──┬──────────┬──────────┬──────────┬──────────┬──────┘
+   │          │          │          │          │
+   ▼          ▼          ▼          ▼          ▼
+ mem0       Slack      Jira/      Web         More
 (Qdrant)   (MCP)    Confluence  (SearXNG)
                       (MCP)
 ```
@@ -68,8 +75,8 @@ The closed loop is the core value: every investigation makes the next one faster
 
 ## Features
 
-- **Memory-first retrieval** — shared org knowledge grows from queries, not manual curation
-- **Multi-source investigation** — Slack, Jira, Confluence, web search in a single query
+- **Memory-first retrieval** — shared org knowledge grows from queries
+- **Multi-source investigation** — Centrally-managed tools for multiple users
 - **Self-hosted** — your data never leaves your infrastructure
 - **Subagent architecture** — user-support agent dispatches to investigator asynchronously
 - **Conversation isolation** — each topic gets its own investigator conversation, preventing context accumulation
@@ -84,11 +91,11 @@ The closed loop is the core value: every investigation makes the next one faster
 
 ## Agents
 
-| Agent | Role | Model |
-|-------|------|-------|
-| `user-support` | User-facing, receives queries, dispatches to investigator, presents answers | DeepSeek V4 Flash |
-| `investigator` | Checks mem0, fans out to tools, stores findings, returns results to user-support | DeepSeek V4 Flash |
-| `mcp-investigator` | Same capacity as `investigator` but responds directly in-conversation; used by the `conjexture-mcp` server for two-phase querying (mem0-only fast path + background full investigation) | DeepSeek V4 Flash |
+| Agent | Role |
+|-------|------|
+| `user-support` | User-facing, receives queries, dispatches to investigator, presents answers |
+| `investigator` | Checks mem0, fans out to tools, stores findings, returns results to user-support |
+| `mcp-investigator` | Same capacity as `investigator` but responds directly in-conversation; used by the `conjexture-mcp` server for two-phase querying (mem0-only fast path + background full investigation) |
 
 
 ## Stack

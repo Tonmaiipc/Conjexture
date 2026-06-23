@@ -2,7 +2,9 @@
 
 **Org Research Platform** — a self-hosted, memory-first knowledge consolidation platform for product development teams.
 
-**Conjexture** was built to solve the knowledge gap horizontally across teams and vertically across ranks. Conjexture creates an orchestrating layer that serves centralized agents equiped with research tools on the team level.
+
+**Conjexture** was built to solve the knowledge gap horizontally across teams and vertically across ranks. It creates an orchestrating layer that serves centralized agents equiped with research tools on the team level.
+
 
 **Conjexture** connects to the centrally-managed org's tools (Slack, Jira, Confluence, and more), investigates questions, and stores findings in a shared memory that grows smarter with every query. The more your team asks, the faster and cheaper subsequent queries become.
 
@@ -86,7 +88,7 @@ The closed loop is the core value: every investigation makes the next one faster
 
 ## Architecture
 
-<img width="795" height="634" alt="image" src="https://github.com/user-attachments/assets/ec0720eb-4e42-4579-8371-7195a1fb6008" />
+<img width="932" height="641" alt="image" src="https://github.com/user-attachments/assets/28b68003-00c8-4f5d-8eee-9e5b3f186f78" />
 
 
 ## Agents

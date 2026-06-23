@@ -34,40 +34,35 @@ Most org knowledge tools are search-first and stateless — they find informatio
 ## How It Works
 
 ```
-┌─────────────────────────────────────────────────────┐
-│         External LLM Clients                         │
-│  (Claude Desktop, Cursor, other MCP hosts)           │
-└─────────────────┬───────────────────────────────────┘
-                  │ conjexture_query(question, topic_id?)
-┌─────────────────▼───────────────────────────────────┐
-│           conjexture-mcp (port 8300)                 │
-│      FastMCP server — StreamableHTTP                 │
-│      Dispatches to mcp-investigator via Letta API    │
-└─────────────────┬───────────────────────────────────┘
-                  │
-┌─────────────────▼───────────────────────────────────┐
-│                    User / Frontend                   │
-│              (Letta ADE, Slack bot)                  │
-└─────────────────┬───────────────────────────────────┘
-                  │
-┌─────────────────▼───────────────────────────────────┐
-│              User-Support Agent (Letta)              │
-│         Conversational interface, dispatches         │
-└─────────────────┬───────────────────────────────────┘
-                  │ dispatch_to_investigator
-┌─────────────────▼───────────────────────────────────┐
-│          Investigator / mcp-investigator (Letta)     │
-│                                                      │
-│  1. Check mem0 (shared org memory)                   │
-│  2. If insufficient → fan out to tools               │
-│  3. Store findings to mem0                           │
-│  4. Return answer to caller                          │
-└──┬──────────┬──────────┬──────────┬──────────┬──────┘
-   │          │          │          │          │
-   ▼          ▼          ▼          ▼          ▼
- mem0       Slack      Jira/      Web         More
-(Qdrant)   (MCP)    Confluence  (SearXNG)
-                      (MCP)
+┌──────────────────────┐         ┌──────────────────────┐
+│   Ext LLM Clients    │         │        User          │
+└─────────┬────────────┘         └──────────┬───────────┘
+          │ conjexture_query                │ chat
+┌─────────▼────────────┐         ┌──────────▼───────────┐
+│    MCP Server        │         │    Frontend UI       │
+│    (port 8300)       │         │(Letta ADE, Slack bot)│
+└─────────┬────────────┘         └──────────┬───────────┘
+          │                                 │
+          └──────────────┬────────────────────┘
+                         │
+              ┌──────────▼───────────┐
+              │  User-Support Agent  │
+              │     (Letta)          │
+              └──────────┬───────────┘
+                         │ dispatch_to_investigator
+              ┌──────────▼───────────┐
+              │ Investigator /       │
+              │ mcp-investigator     │
+              │                      │
+              │  1. Check mem0       │
+              │  2. Fan out to tools │
+              │  3. Store to mem0    │
+              │  4. Return answer    │
+              └──┬──────┬──────┬─────┘
+                 ▼      ▼      ▼
+               mem0   Slack   Jira/
+              (Qdrant) (MCP) Confluence
+                                (MCP)
 ```
 
 Next query on same topic → mem0 hit → investigation skipped

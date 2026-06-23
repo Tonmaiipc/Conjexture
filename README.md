@@ -1,34 +1,28 @@
 # Conjexture
 
-**Org Research Platform** — a self-hosted, memory-first knowledge consolidation platform for product development teams.
+A self-hosted, memory-first knowledge consolidation platform for product development teams.
 
+**Conjexture** was built to solve the knowledge gap across teams and ranks. It is an orchestrating layer that serves  agents equiped with research tools on the team level.
 
-**Conjexture** was built to solve the knowledge gap horizontally across teams and vertically across ranks. It creates an orchestrating layer that serves centralized agents equiped with research tools on the team level.
+**Conjexture** connects to the centrally-managed org's tools (Slack, Jira, Confluence, and more), investigates questions, and stores findings in a shared memory that grows with every query, making subsequent queries faster and cheaper.
 
+## Why Conjexture?
 
-**Conjexture** connects to the centrally-managed org's tools (Slack, Jira, Confluence, and more), investigates questions, and stores findings in a shared memory that grows smarter with every query. The more your team asks, the faster and cheaper subsequent queries become.
+When researching a topic in an org, context is scattered across Slack, Jira, Confluence, and more. LLMs with tool calling make it possible to query across all of them. The challenge is deploying this at org scale:
 
+1. Context fragmentation. Without SaaS connections, members still gather context to feed to the AI manually, defeating the purpose.
 
-What makes this solution unique is a set of considerations and philosophy it has chosen to adopt:
-1. Provisioning – Conjexture be centrally managed as a platform tool. Non-technical users should be able to use without having to do the piping.
-2. Access control – Access to tools and target artifacts can be centrally managed at least on the group / team level.
-3. Token economy – The orchestration layer theorically helps managing the token cost. (1) team level memory cache. Findings are saved to a memory database with source reference and datetime. This theorically should reduce the amount of tool calling. (2) Separation of concern – separate agent layer for calling research tools and reporting finding. A user can limit their use of high-performance model to complex task and dedicate the research tasks to Conjexture.
-4. LLM provider agnostic – states are maintained in the memory. The models of choice can be switched anytime based on performance and pricing without affecting the users downstream.
+2. Setup complexity. To connect their AI to SaaS tools, every member needs to individually set it up. Each with their own API keys, scopes, and configs. This is a high friction point for a non-technical user.
 
+3. Token inefficiency at scale. Team members operate within the highly-shared-context environment. The same sources get fetched and processed repeatedly per member per query. Tokens aren't used efficiently.
 
-## Why **Conjexture**?
+Conjexture addresses these challenges:
 
-Most org knowledge tools are search-first and stateless — they find information but don't learn from queries. 
-
-1. **Conjexture** is memory-first:
-- **Glean, Dust, Rovo, Notion AI** — search returns results, session ends, nothing is remembered
-- **Conjexture** — every investigation is stored back to shared memory, making the next query faster and cheaper.
-
-**The system compounds over time.**
-
-2. **SaaS agnostic** — connects to your existing tools, no ecosystem lock-in
-3. **LLM agnostic** — bring your own API key, swap models anytime
-4. **Self-hosted** — your data never leaves your infrastructure
+1. Provisioning – users connecting to Conjexture have access to all tools connecting to org context.
+2. Token economy – (1) team level memory cache reduces redundant tool calls. (2) Research tasks can be routed to cost-efficient models, reserving user's capable models for processing.
+3. Access control – Access to assets and tools can be centrally managed on the team level.
+4. LLM provider agnostic – State lives in memory, not in the model. Models can be switched anytime.
+5. Self-hosted and model-agnostic. LLM pricing won't stay subsidized. Swap providers anytime. Org's AI workflows stay intact.
 
 
 ## How It Works
@@ -58,11 +52,10 @@ Most org knowledge tools are search-first and stateless — they find informatio
               │  2. Fan out to tools │
               │  3. Store to mem0    │
               │  4. Return answer    │
-              └──┬──────┬──────┬─────┘
-                 ▼      ▼      ▼
-               mem0   Slack   Jira/
-              (Qdrant) (MCP) Confluence
-                                (MCP)
+              └──┬──────┬─────────┬──┘
+                 ▼      ▼         ▼
+               mem0   Slack   Jira/Confluence
+             (Qdrant) (MCP)        (MCP)
 ```
 
 Next query on same topic → mem0 hit → investigation skipped
